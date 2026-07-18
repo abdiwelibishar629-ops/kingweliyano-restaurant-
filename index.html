@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>KING WELIYANO RESTAURANT</title>
+
+<link rel="stylesheet" href="css/style.css">
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,Helvetica,sans-serif;
+scroll-behavior:smooth;
+}
+
+body{
+background:#ffffff;
+color:#222;
+}
+
+header{
+
+background:#111;
+
+display:flex;
+
+justify-content:space-between;
+
+align-items:center;
+
+padding:18px 60px;
+
+position:sticky;
+
+top:0;
+
+z-index:1000;
+
+}
+
+.logo{
+
+color:gold;
+
+font-size:30px;
+
+font-weight:bold;
+
+}
+
+nav a{
+
+color:white;
+
+text-decoration:none;
+
+margin-left:25px;
+
+font-size:18px;
+
+transition:.3s;
+
+}
+
+nav a:hover{
+
+color:gold;
+
+}
+
+.hero{
+
+height:90vh;
+
+background:url("images/background/restaurant.jpg") center center/cover;
+
+display:flex;
+
+justify-content:center;
+
+align-items:center;
+
+text-align:center;
+
+color:white;
+
+}
+
+.overlay{
+
+background:rgba(0,0,0,.6);
+
+padding:60px;
+
+border-radius:10px;
+
+}
+
+.overlay h1{
+
+font-size:60px;
+
+margin-bottom:20px;
+
+}
+
+.overlay p{
+
+font-size:22px;
+
+margin-bottom:30px;
+
+}
+
+.btn{
+
+display:inline-block;
+
+padding:15px 35px;
+
+background:gold;
+
+color:black;
+
+font-weight:bold;
+
+text-decoration:none;
+
+border-radius:5px;
+
+margin:10px;
+
+}
+
+.btn:hover{
+
+background:white;
+
+}
+
+section{
+
+padding:70px 10%;
+
+}
+
+.section-title{
+
+text-align:center;
+
+font-size:40px;
+
+margin-bottom:40px;
+
+color:#111;
+
+}
+
+.foods{
+
+display:grid;
+
+grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+
+gap:25px;
+
+}
+
+.card{
+
+background:white;
+
+border-radius:10px;
+
+overflow:hidden;
+
+box-shadow:0 0 10px rgba(0,0,0,.2);
+
+}
+
+.card img{
+
+width:100%;
+
+height:220px;
+
+object-fit:cover;
+
+}
+
+.card h3{
+
+padding:15px;
+
+}
+
+.card p{
+
+padding:0 15px 20px;
+
+}
+
+.services{
+
+display:grid;
+
+grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+
+gap:20px;
+
+text-align:center;
+
+}
+
+.service{
+
+background:#f7f7f7;
+
+padding:30px;
+
+border-radius:10px;
+
+}
+
+footer{
+
+background:#111;
+
+color:white;
+
+text-align:center;
+
+padding:30px;
+
+margin-top:50px;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+
+KING WELIYANO
+
+</div>
+
+<nav>
+
+<a href="#">Home</a>
+
+<a href="#foods">Menu</a>
+
+<a href="#services">Services</a>
+
+<a href="register.html">Register</a>
+
+<a href="login.html">Login</a>
+
+</nav>
+
+</header>
+
+<div class="hero">
+
+<div class="overlay">
+
+<h1>WELCOME TO KING WELIYANO RESTAURANT</h1>
+
+<p>Luxury Dining Experience In Wajir</p>
+
+<a href="register.html" class="btn">Create Account</a>
+
+<a href="login.html" class="btn">Login</a>
+
+</div>
+
+</div>
+
+<section id="foods">
+
+<h2 class="section-title">
+
+Featured Menu
+
+</h2>
+
+<div class="foods">
+
+<div class="card">
+
+<img src="images/foods/burger.jpg">
+
+<h3>Beef Burger</h3>
+
+<p>KES 650</p>
+
+</div>
+
+<div class="card">
+
+<img src="images/foods/pizza.jpg">
+
+<h3>Chicken Pizza</h3>
+
+<p>KES 1350</p>
+
+</div>
+
+<div class="card">
+
+<img src="images/foods/friedchicken.jpg">
+
+<h3>Fried Chicken</h3>
+
+<p>KES 950</p>
+
+</div>
+
+<div class="card">
+
+<img src="images/foods/juice.jpg">
+
+<h3>Fresh Juice</h3>
+
+<p>KES 300</p>
+
+</div>
+
+</div>
+
+</section>
+
+<section id="services">
+
+<h2 class="section-title">
+
+Our Services
+
+</h2>
+
+<div class="services">
+
+<div class="service">
+
+<h3>🍽️ Restaurant</h3>
+
+<p>Luxury dining experience.</p>
+
+</div>
+
+<div class="service">
+
+<h3>🚚 Fast Delivery</h3>
+
+<p>Food delivered quickly.</p>
+
+</div>
+
+<div class="service">
+
+<h3>👨‍🍳 Professional Chefs</h3>
+
+<p>Prepared by experienced chefs.</p>
+
+</div>
+
+<div class="service">
+
+<h3>⭐ 5 Star Quality</h3>
+
+<p>Premium meals and excellent service.</p>
+
+</div>
+
+</div>
+
+</section>
+
+<footer>
+
+<h2>KING WELIYANO RESTAURANT</h2>
+
+<p>Email: abdiwelibishar629@gmail.com</p>
+
+<p>Phone: 0742533263</p>
+
+<p>© 2026 All Rights Reserved</p>
+
+</footer>
+
+<script src="js/index.js"></script>
+
+</body>
+</html>

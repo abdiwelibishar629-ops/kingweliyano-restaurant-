@@ -1,0 +1,250 @@
+cat > admin.html << 'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>👑 Admin Dashboard - King Weliyano</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <!-- ===== LOGIN CHECK ===== -->
+    <script>
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            window.location.href = 'login.html';
+        }
+        
+        async function verifyAuth() {
+            try {
+                const response = await fetch('/api/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+                const result = await response.json();
+                if (!result.success) {
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('user');
+                    window.location.href = 'login.html';
+                }
+            } catch (error) {
+                window.location.href = 'login.html';
+            }
+        }
+        verifyAuth();
+        
+        function logout() {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                fetch('/api/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+            }
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+    </script>
+
+    <header>
+        <div class="header-content">
+            <h1>👑 King Weliyano - Admin Dashboard</h1>
+            <nav>
+                <a href="index.html">🏠 Home</a>
+                <a href="waiter.html">👨‍🍳 Waiter</a>
+                <a href="chef.html">👨‍🍳 Chef</a>
+                <a href="admin.html">👑 Admin</a>
+                <a href="#" onclick="logout()">🚪 Logout</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card"><div class="number" id="total-orders">0</div><div class="label">Total Orders</div></div>
+            <div class="stat-card"><div class="number" id="pending-orders">0</div><div class="label">⏳ Pending</div></div>
+            <div class="stat-card"><div class="number" id="preparing-orders">0</div><div class="label">🔪 Preparing</div></div>
+            <div class="stat-card"><div class="number" id="ready-orders">0</div><div class="label">✅ Ready</div></div>
+            <div class="stat-card"><div class="number" id="served-orders">0</div><div class="label">🍽️ Served</div></div>
+            <div class="stat-card revenue"><div class="number" id="total-revenue">$0</div><div class="label">💰 Revenue</div></div>
+        </div>
+
+        <!-- Menu Management -->
+        <div class="menu-management">
+            <h3>📝 Manage Menu</h3>
+            <div class="form-row">
+                <input type="text" id="item-name" placeholder="Item Name">
+                <input type="number" id="item-price" placeholder="Price" step="0.01">
+                <input type="text" id="item-category" placeholder="Category">
+                <input type="text" id="item-image" placeholder="Emoji (e.g. 🍔)">
+                <button onclick="addMenuItem()" class="btn-add-item">➕ Add Item</button>
+            </div>
+            <div id="menu-items-list" class="menu-items-list"></div>
+        </div>
+
+        <!-- All Orders -->
+        <div style="margin-top: 30px;">
+            <h3>📋 All Orders</h3>
+            <div id="orders-container"></div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2024 King Weliyano Restaurant. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // ===== STATS =====
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const stats = await response.json();
+                document.getElementById('total-orders').textContent = stats.totalOrders;
+                document.getElementById('pending-orders').textContent = stats.pendingOrders;
+                document.getElementById('preparing-orders').textContent = stats.preparingOrders;
+                document.getElementById('ready-orders').textContent = stats.readyOrders;
+                document.getElementById('served-orders').textContent = stats.servedOrders;
+                document.getElementById('total-revenue').textContent = `$${stats.totalRevenue.toFixed(2)}`;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // ===== MENU MANAGEMENT =====
+        async function loadMenuItems() {
+            try {
+                const response = await fetch('/api/menu');
+                const menu = await response.json();
+                const container = document.getElementById('menu-items-list');
+                if (menu.length === 0) {
+                    container.innerHTML = '<p style="color:#7f8c8d;">No menu items yet. Add one above!</p>';
+                    return;
+                }
+                container.innerHTML = menu.map(item => `
+                    <div class="menu-item-card">
+                        <div class="item-info">
+                            <span class="item-name">${item.image || '🍽️'} ${item.name}</span>
+                            <span class="item-price">$${item.price.toFixed(2)} - ${item.category}</span>
+                        </div>
+                        <button onclick="deleteMenuItem(${item.id})" class="btn-delete-item">✕</button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading menu:', error);
+            }
+        }
+
+        async function addMenuItem() {
+            const name = document.getElementById('item-name').value.trim();
+            const price = document.getElementById('item-price').value;
+            const category = document.getElementById('item-category').value.trim();
+            const image = document.getElementById('item-image').value.trim() || '🍽️';
+            
+            if (!name || !price) {
+                alert('Please enter name and price!');
+                return;
+            }
+            
+            try {
+                await fetch('/api/menu', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, price: parseFloat(price), category, image })
+                });
+                document.getElementById('item-name').value = '';
+                document.getElementById('item-price').value = '';
+                document.getElementById('item-category').value = '';
+                document.getElementById('item-image').value = '';
+                loadMenuItems();
+                loadStats();
+            } catch (error) {
+                console.error('Error adding item:', error);
+                alert('Error adding item. Please try again.');
+            }
+        }
+
+        async function deleteMenuItem(id) {
+            if (!confirm('Delete this item?')) return;
+            try {
+                await fetch(`/api/menu/${id}`, { method: 'DELETE' });
+                loadMenuItems();
+                loadStats();
+            } catch (error) {
+                console.error('Error deleting item:', error);
+                alert('Error deleting item. Please try again.');
+            }
+        }
+
+        // ===== ALL ORDERS =====
+        async function loadAllOrders() {
+            try {
+                const response = await fetch('/api/orders');
+                const orders = await response.json();
+                const container = document.getElementById('orders-container');
+                
+                if (orders.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No orders yet</div>';
+                    return;
+                }
+                
+                container.innerHTML = orders.map(order => `
+                    <div class="order-card status-${order.status}">
+                        <div class="order-header">
+                            <div>
+                                <strong>Order #${order.id}</strong>
+                                <span class="status-badge ${order.status}">${order.status}</span>
+                            </div>
+                            <span>${new Date(order.timestamp).toLocaleString()}</span>
+                        </div>
+                        <div class="order-body">
+                            <p><strong>👤 Customer:</strong> ${order.customerName}</p>
+                            <p><strong>📞 Phone:</strong> ${order.phone}</p>
+                            <p><strong>🪑 Table:</strong> ${order.tableNumber || 'N/A'}</p>
+                            <ul>
+                                ${order.items.map(item => `
+                                    <li>${item.image || '🍽️'} ${item.name} x${item.quantity} - $${(item.price * item.quantity).toFixed(2)}</li>
+                                `).join('')}
+                            </ul>
+                            ${order.specialInstructions ? `<p><strong>📌 Instructions:</strong> ${order.specialInstructions}</p>` : ''}
+                            <p class="order-total"><strong>Total: $${order.total.toFixed(2)}</strong></p>
+                        </div>
+                        <div class="order-actions">
+                            <button onclick="deleteOrder(${order.id})" class="btn-delete">🗑️ Delete Order</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading orders:', error);
+            }
+        }
+
+        async function deleteOrder(id) {
+            if (!confirm(`Delete order #${id}?`)) return;
+            try {
+                await fetch(`/api/orders/${id}`, { method: 'DELETE' });
+                loadAllOrders();
+                loadStats();
+            } catch (error) {
+                console.error('Error deleting order:', error);
+                alert('Error deleting order. Please try again.');
+            }
+        }
+
+        // ===== AUTO-REFRESH =====
+        setInterval(() => {
+            loadStats();
+            loadAllOrders();
+        }, 10000);
+
+        // ===== LOAD ON PAGE LOAD =====
+        loadStats();
+        loadMenuItems();
+        loadAllOrders();
+    </script>
+</body>
+</html>
+EOF
