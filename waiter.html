@@ -7,6 +7,54 @@
     <link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
+    <!-- ===== LOGIN PROTECTION ===== -->
+    <script>
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            window.location.href = 'login.html';
+        }
+
+        async function verifyAuth() {
+            try {
+                const response = await fetch('/api/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+                const result = await response.json();
+                if (!result.success) {
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('user');
+                    window.location.href = 'login.html';
+                }
+            } catch (error) {
+                window.location.href = 'login.html';
+            }
+        }
+        verifyAuth();
+
+        function logout() {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                fetch('/api/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+            }
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+
+        // Check role - only waiter and admin can access
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (user.role !== 'waiter' && user.role !== 'admin') {
+            alert('Access denied. Waiters only.');
+            window.location.href = 'login.html';
+        }
+    </script>
+
     <header>
         <div class="header-content">
             <h1>👨‍🍳 King Weliyano - Waiter Dashboard</h1>
@@ -15,14 +63,16 @@
                 <a href="waiter.html">👨‍🍳 Waiter</a>
                 <a href="chef.html">👨‍🍳 Chef</a>
                 <a href="admin.html">👑 Admin</a>
+                <a href="#" onclick="logout()">🚪 Logout</a>
             </nav>
         </div>
     </header>
+
     <div class="container">
         <div class="dashboard-header">
             <h2>📋 All Orders</h2>
             <div class="filter-buttons">
-                <button onclick="loadOrders('all')" class="btn-filter active">All</button>
+                <button onclick="loadOrders('all')" class="btn-filter active">📋 All</button>
                 <button onclick="loadOrders('pending')" class="btn-filter">⏳ Pending</button>
                 <button onclick="loadOrders('preparing')" class="btn-filter">🔪 Preparing</button>
                 <button onclick="loadOrders('ready')" class="btn-filter">✅ Ready</button>
@@ -31,11 +81,16 @@
         </div>
         <div id="orders-container"></div>
     </div>
+
     <footer>
         <p>© 2024 King Weliyano Restaurant. All rights reserved.</p>
     </footer>
+
     <script>
+        let currentStatus = 'all';
+
         async function loadOrders(status = 'all') {
+            currentStatus = status;
             const url = status === 'all' ? '/api/orders' : `/api/orders?status=${status}`;
             try {
                 const response = await fetch(url);
@@ -45,12 +100,20 @@
                 console.error('Error loading orders:', error);
             }
         }
+
         function displayOrders(orders) {
             const container = document.getElementById('orders-container');
+            
             if (orders.length === 0) {
-                container.innerHTML = '<div class="empty-state">No orders found</div>';
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h2>📭 No orders found</h2>
+                        <p>Orders will appear here when customers place them.</p>
+                    </div>
+                `;
                 return;
             }
+
             container.innerHTML = orders.map(order => `
                 <div class="order-card status-${order.status}">
                     <div class="order-header">
@@ -61,42 +124,66 @@
                         <span>${new Date(order.timestamp).toLocaleString()}</span>
                     </div>
                     <div class="order-body">
-                        <p><strong>Customer:</strong> ${order.customerName}</p>
-                        <p><strong>Phone:</strong> ${order.phone}</p>
-                        <p><strong>Table:</strong> ${order.tableNumber || 'N/A'}</p>
-                        <p><strong>Items:</strong></p>
+                        <p><strong>👤 Customer:</strong> ${order.customerName}</p>
+                        <p><strong>📞 Phone:</strong> ${order.phone}</p>
+                        <p><strong>🪑 Table:</strong> ${order.tableNumber || 'N/A'}</p>
+                        <p><strong>📝 Items:</strong></p>
                         <ul>
                             ${order.items.map(item => `
                                 <li>${item.image || '🍽️'} ${item.name} x${item.quantity} - $${(item.price * item.quantity).toFixed(2)}</li>
                             `).join('')}
                         </ul>
-                        <p><strong>Special Instructions:</strong> ${order.specialInstructions || 'None'}</p>
+                        ${order.specialInstructions ? `<p><strong>📌 Instructions:</strong> ${order.specialInstructions}</p>` : ''}
                         <p class="order-total"><strong>Total: $${order.total.toFixed(2)}</strong></p>
                     </div>
                     <div class="order-actions">
-                        ${order.status === 'ready' ? `<button onclick="updateOrder(${order.id}, 'served')" class="btn-served">🍽️ Mark as Served</button>` : ''}
-                        ${order.status === 'pending' ? `<button onclick="updateOrder(${order.id}, 'preparing')" class="btn-prepare">🔪 Start Preparing</button>` : ''}
-                        ${order.status === 'preparing' ? `<button onclick="updateOrder(${order.id}, 'ready')" class="btn-ready">✅ Mark as Ready</button>` : ''}
+                        ${order.status === 'ready' ? `
+                            <button onclick="updateOrder(${order.id}, 'served')" class="btn-served">
+                                🍽️ Mark as Served
+                            </button>
+                        ` : ''}
+                        ${order.status === 'pending' ? `
+                            <span style="color:#f39c12;font-weight:bold;">⏳ Waiting for chef</span>
+                        ` : ''}
+                        ${order.status === 'preparing' ? `
+                            <span style="color:#3498db;font-weight:bold;">🔪 Chef is cooking</span>
+                        ` : ''}
+                        ${order.status === 'served' ? `
+                            <span style="color:#9b59b6;font-weight:bold;">✅ Served to customer</span>
+                        ` : ''}
                     </div>
                 </div>
             `).join('');
+
+            // Update active filter
             document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
-            const activeBtn = document.querySelector(`.btn-filter[onclick*="${status}"]`);
+            const activeBtn = document.querySelector(`.btn-filter[onclick*="${currentStatus}"]`);
             if (activeBtn) activeBtn.classList.add('active');
         }
+
         async function updateOrder(id, status) {
             try {
-                await fetch(`/api/orders/${id}`, {
+                const response = await fetch(`/api/orders/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ status })
                 });
-                loadOrders('all');
+                const result = await response.json();
+                if (result.success) {
+                    loadOrders(currentStatus);
+                }
             } catch (error) {
                 console.error('Error updating order:', error);
+                alert('Error updating order. Please try again.');
             }
         }
-        setInterval(() => loadOrders('all'), 10000);
+
+        // Auto-refresh every 5 seconds
+        setInterval(() => {
+            loadOrders(currentStatus);
+        }, 5000);
+
+        // Load orders on page load
         loadOrders('all');
     </script>
 </body>
