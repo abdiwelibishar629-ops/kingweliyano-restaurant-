@@ -1,20 +1,18 @@
-cat > login.html << 'EOF'
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🔐 Login - King Weliyano</title>
+    <title>Login - King Weliyano</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             background: #fdf6ec;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            margin: 20px;
         }
         .login-container {
             background: white;
@@ -24,18 +22,16 @@ cat > login.html << 'EOF'
             width: 100%;
             max-width: 400px;
         }
-        .logo { text-align: center; font-size: 4rem; margin-bottom: 10px; }
-        h1 { text-align: center; color: #c0392b; margin-bottom: 5px; }
-        .subtitle { text-align: center; color: #7f8c8d; margin-bottom: 25px; font-size: 0.9rem; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-weight: 600; margin-bottom: 5px; color: #2c3e50; font-size: 0.9rem; }
+        .logo { text-align: center; font-size: 4rem; }
+        h1 { text-align: center; color: #c0392b; margin: 10px 0; }
+        .subtitle { text-align: center; color: #7f8c8d; margin-bottom: 20px; }
         input {
             width: 100%;
-            padding: 12px 15px;
+            padding: 12px;
+            margin: 10px 0;
             border: 2px solid #ecf0f1;
             border-radius: 8px;
             font-size: 1rem;
-            transition: border-color 0.3s;
         }
         input:focus { border-color: #c0392b; outline: none; }
         button {
@@ -46,56 +42,25 @@ cat > login.html << 'EOF'
             border: none;
             border-radius: 8px;
             font-size: 1.1rem;
-            font-weight: 600;
             cursor: pointer;
-            transition: background 0.3s;
-            margin-top: 10px;
         }
         button:hover { background: #e74c3c; }
-        button:disabled { opacity: 0.6; cursor: not-allowed; }
-        .message {
+        .error {
+            background: #fde8e8;
+            color: #c0392b;
             padding: 10px;
             border-radius: 8px;
             margin: 10px 0;
             display: none;
-            text-align: center;
-            font-weight: 500;
         }
-        .message.error {
-            background: #fde8e8;
-            color: #c0392b;
-            display: block;
-            border: 1px solid #f5c6c6;
-        }
-        .message.success {
-            background: #e8f8f0;
-            color: #27ae60;
-            display: block;
-            border: 1px solid #a9dfbf;
-        }
-        .links {
-            text-align: center;
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #ecf0f1;
-        }
-        .links a {
-            color: #c0392b;
-            text-decoration: none;
-            margin: 0 10px;
-            font-size: 0.9rem;
-        }
-        .links a:hover { text-decoration: underline; }
         .demo-credentials {
             background: #f8f9fa;
             padding: 15px;
             border-radius: 8px;
             margin: 15px 0;
             font-size: 0.85rem;
-            border: 1px solid #e9ecef;
         }
-        .demo-credentials p { margin: 3px 0; color: #495057; }
-        .demo-credentials strong { color: #2c3e50; }
+        .demo-credentials p { margin: 3px 0; }
         .role-badge {
             display: inline-block;
             padding: 2px 10px;
@@ -106,18 +71,9 @@ cat > login.html << 'EOF'
         .role-badge.admin { background: #c0392b; color: white; }
         .role-badge.waiter { background: #3498db; color: white; }
         .role-badge.chef { background: #e67e22; color: white; }
-        .spinner {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid white;
-            border-radius: 50%;
-            border-top-color: transparent;
-            animation: spin 0.6s linear infinite;
-            vertical-align: middle;
-            margin-right: 8px;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        .links { text-align: center; margin-top: 20px; }
+        .links a { color: #c0392b; text-decoration: none; margin: 0 10px; }
+        .links a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -126,19 +82,11 @@ cat > login.html << 'EOF'
         <h1>King Weliyano</h1>
         <p class="subtitle">Staff Login</p>
         
-        <div id="message" class="message"></div>
+        <div id="error-message" class="error"></div>
         
-        <div class="form-group">
-            <label for="username">👤 Username</label>
-            <input type="text" id="username" placeholder="Enter your username" autocomplete="username">
-        </div>
-        
-        <div class="form-group">
-            <label for="password">🔒 Password</label>
-            <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password">
-        </div>
-        
-        <button id="loginBtn" onclick="login()">🔐 Login</button>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="login()">🔐 Login</button>
         
         <div class="demo-credentials">
             <p style="font-weight:600;margin-bottom:5px;">📋 Demo Credentials:</p>
@@ -149,13 +97,11 @@ cat > login.html << 'EOF'
         
         <div class="links">
             <a href="index.html">🏠 Home</a>
-            <a href="waiter.html">👨‍🍳 Waiter</a>
-            <a href="chef.html">👨‍🍳 Chef</a>
-            <a href="admin.html">👑 Admin</a>
         </div>
     </div>
 
     <script>
+        // Check if already logged in
         const token = localStorage.getItem('authToken');
         if (token) {
             verifySession(token);
@@ -182,20 +128,15 @@ cat > login.html << 'EOF'
         async function login() {
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value.trim();
-            const messageDiv = document.getElementById('message');
-            const loginBtn = document.getElementById('loginBtn');
+            const errorDiv = document.getElementById('error-message');
             
-            messageDiv.className = 'message';
-            messageDiv.textContent = '';
+            errorDiv.style.display = 'none';
             
             if (!username || !password) {
-                messageDiv.className = 'message error';
-                messageDiv.textContent = '⚠️ Please enter both username and password';
+                errorDiv.textContent = '⚠️ Please enter username and password';
+                errorDiv.style.display = 'block';
                 return;
             }
-            
-            loginBtn.disabled = true;
-            loginBtn.innerHTML = '<span class="spinner"></span> Logging in...';
             
             try {
                 const response = await fetch('/api/login', {
@@ -209,24 +150,14 @@ cat > login.html << 'EOF'
                 if (result.success) {
                     localStorage.setItem('authToken', result.token);
                     localStorage.setItem('user', JSON.stringify(result.user));
-                    
-                    messageDiv.className = 'message success';
-                    messageDiv.textContent = `✅ Welcome ${result.user.name}! Redirecting...`;
-                    
-                    setTimeout(() => {
-                        redirectToDashboard(result.user.role);
-                    }, 1500);
+                    redirectToDashboard(result.user.role);
                 } else {
-                    messageDiv.className = 'message error';
-                    messageDiv.textContent = '❌ ' + (result.error || 'Invalid username or password');
-                    loginBtn.disabled = false;
-                    loginBtn.innerHTML = '🔐 Login';
+                    errorDiv.textContent = '❌ ' + (result.error || 'Invalid credentials');
+                    errorDiv.style.display = 'block';
                 }
             } catch (error) {
-                messageDiv.className = 'message error';
-                messageDiv.textContent = '❌ Error connecting to server. Please try again.';
-                loginBtn.disabled = false;
-                loginBtn.innerHTML = '🔐 Login';
+                errorDiv.textContent = '❌ Error connecting to server';
+                errorDiv.style.display = 'block';
             }
         }
 
@@ -244,9 +175,6 @@ cat > login.html << 'EOF'
                 login();
             }
         });
-
-        document.getElementById('username').focus();
     </script>
 </body>
 </html>
-EOF
