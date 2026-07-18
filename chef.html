@@ -1,123 +1,191 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chef Dashboard</title>
-
-<style>
-
-body{
-margin:0;
-font-family:Arial;
-background:#f4f4f4;
-}
-
-header{
-background:#111;
-color:white;
-padding:20px;
-text-align:center;
-font-size:30px;
-}
-
-.container{
-width:90%;
-margin:auto;
-padding:30px;
-}
-
-table{
-width:100%;
-background:white;
-border-collapse:collapse;
-box-shadow:0 0 10px rgba(0,0,0,.2);
-}
-
-th{
-background:green;
-color:white;
-padding:15px;
-}
-
-td{
-padding:15px;
-text-align:center;
-border:1px solid #ddd;
-}
-
-button{
-
-padding:10px 18px;
-
-border:none;
-
-color:white;
-
-cursor:pointer;
-
-font-weight:bold;
-
-}
-
-.prepare{
-
-background:orange;
-
-}
-
-.ready{
-
-background:green;
-
-}
-
-</style>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>👨‍🍳 Chef Dashboard - King Weliyano</title>
+    <link rel="stylesheet" href="dashboard.css">
 </head>
-
 <body>
+    <!-- ===== LOGIN PROTECTION ===== -->
+    <script>
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            window.location.href = 'login.html';
+        }
 
-<header>
+        async function verifyAuth() {
+            try {
+                const response = await fetch('/api/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+                const result = await response.json();
+                if (!result.success) {
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('user');
+                    window.location.href = 'login.html';
+                }
+            } catch (error) {
+                window.location.href = 'login.html';
+            }
+        }
+        verifyAuth();
 
-👨‍🍳 KING WELIYANO RESTAURANT CHEF DASHBOARD
+        function logout() {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                fetch('/api/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+            }
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
 
-</header>
+        // Check role - only chef and admin can access
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (user.role !== 'chef' && user.role !== 'admin') {
+            alert('Access denied. Chefs only.');
+            window.location.href = 'login.html';
+        }
+    </script>
 
-<div class="container">
+    <header>
+        <div class="header-content">
+            <h1>👨‍🍳 King Weliyano - Chef Dashboard</h1>
+            <nav>
+                <a href="index.html">🏠 Home</a>
+                <a href="waiter.html">👨‍🍳 Waiter</a>
+                <a href="chef.html">👨‍🍳 Chef</a>
+                <a href="admin.html">👑 Admin</a>
+                <a href="#" onclick="logout()">🚪 Logout</a>
+            </nav>
+        </div>
+    </header>
 
-<h2>Customer Orders</h2>
+    <div class="container">
+        <div class="dashboard-header">
+            <h2>🔪 Kitchen Orders</h2>
+            <div class="filter-buttons">
+                <button onclick="loadOrders('pending')" class="btn-filter active">⏳ Pending</button>
+                <button onclick="loadOrders('preparing')" class="btn-filter">🔪 Preparing</button>
+                <button onclick="loadOrders('ready')" class="btn-filter">✅ Ready</button>
+                <button onclick="loadOrders('all')" class="btn-filter">📋 All</button>
+            </div>
+        </div>
+        <div id="orders-container"></div>
+    </div>
 
-<table>
+    <footer>
+        <p>© 2024 King Weliyano Restaurant. All rights reserved.</p>
+    </footer>
 
-<thead>
+    <script>
+        let currentStatus = 'pending';
 
-<tr>
+        async function loadOrders(status = 'pending') {
+            currentStatus = status;
+            const url = status === 'all' ? '/api/orders' : `/api/orders?status=${status}`;
+            try {
+                const response = await fetch(url);
+                const orders = await response.json();
+                displayOrders(orders, status);
+            } catch (error) {
+                console.error('Error loading orders:', error);
+            }
+        }
 
-<th>ID</th>
+        function displayOrders(orders, currentStatus) {
+            const container = document.getElementById('orders-container');
+            
+            if (orders.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h2>🍽️ No ${currentStatus} orders</h2>
+                        <p>Waiting for new orders from customers...</p>
+                    </div>
+                `;
+                return;
+            }
 
-<th>Food</th>
+            container.innerHTML = orders.map(order => `
+                <div class="order-card status-${order.status}">
+                    <div class="order-header">
+                        <div>
+                            <strong>Order #${order.id}</strong>
+                            <span class="status-badge ${order.status}">${order.status}</span>
+                        </div>
+                        <span>${new Date(order.timestamp).toLocaleString()}</span>
+                    </div>
+                    <div class="order-body">
+                        <p><strong>👤 Customer:</strong> ${order.customerName}</p>
+                        <p><strong>📞 Phone:</strong> ${order.phone}</p>
+                        <p><strong>🪑 Table:</strong> ${order.tableNumber || 'N/A'}</p>
+                        <p><strong>📝 Items:</strong></p>
+                        <ul>
+                            ${order.items.map(item => `
+                                <li>${item.image || '🍽️'} ${item.name} x${item.quantity} - $${(item.price * item.quantity).toFixed(2)}</li>
+                            `).join('')}
+                        </ul>
+                        ${order.specialInstructions ? `<p><strong>📌 Instructions:</strong> ${order.specialInstructions}</p>` : ''}
+                        <p class="order-total"><strong>Total: $${order.total.toFixed(2)}</strong></p>
+                    </div>
+                    <div class="order-actions">
+                        ${order.status === 'pending' ? `
+                            <button onclick="updateOrder(${order.id}, 'preparing')" class="btn-prepare">
+                                🔪 Start Cooking
+                            </button>
+                        ` : ''}
+                        ${order.status === 'preparing' ? `
+                            <button onclick="updateOrder(${order.id}, 'ready')" class="btn-ready">
+                                ✅ Done Cooking
+                            </button>
+                        ` : ''}
+                        ${order.status === 'ready' ? `
+                            <span style="color:#27ae60;font-weight:bold;">✅ Ready for waiter</span>
+                        ` : ''}
+                        ${order.status === 'served' ? `
+                            <span style="color:#9b59b6;font-weight:bold;">🍽️ Served to customer</span>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
 
-<th>Price</th>
+            // Update active filter
+            document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.querySelector(`.btn-filter[onclick*="${currentStatus}"]`);
+            if (activeBtn) activeBtn.classList.add('active');
+        }
 
-<th>Status</th>
+        async function updateOrder(id, status) {
+            try {
+                const response = await fetch(`/api/orders/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    loadOrders(currentStatus);
+                }
+            } catch (error) {
+                console.error('Error updating order:', error);
+                alert('Error updating order. Please try again.');
+            }
+        }
 
-<th>Action</th>
+        // Auto-refresh every 5 seconds
+        setInterval(() => {
+            loadOrders(currentStatus);
+        }, 5000);
 
-</tr>
-
-</thead>
-
-<tbody id="chefOrders">
-
-</tbody>
-
-</table>
-
-</div>
-
-<script src="js/chef.js"></script>
-
+        // Load orders on page load
+        loadOrders('pending');
+    </script>
 </body>
-
 </html>
