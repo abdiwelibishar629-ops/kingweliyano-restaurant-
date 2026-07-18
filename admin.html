@@ -1,4 +1,3 @@
-cat > admin.html << 'EOF'
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,13 +7,15 @@ cat > admin.html << 'EOF'
     <link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
-    <!-- ===== LOGIN CHECK ===== -->
+    <!-- ===== LOGIN PROTECTION ===== -->
     <script>
+        // Check if logged in
         const token = localStorage.getItem('authToken');
         if (!token) {
             window.location.href = 'login.html';
         }
-        
+
+        // Verify token with server
         async function verifyAuth() {
             try {
                 const response = await fetch('/api/verify', {
@@ -33,7 +34,8 @@ cat > admin.html << 'EOF'
             }
         }
         verifyAuth();
-        
+
+        // Logout function
         function logout() {
             const token = localStorage.getItem('authToken');
             if (token) {
@@ -45,6 +47,13 @@ cat > admin.html << 'EOF'
             }
             localStorage.removeItem('authToken');
             localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+
+        // Get user info
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (user.role !== 'admin') {
+            alert('Access denied. Admin only.');
             window.location.href = 'login.html';
         }
     </script>
@@ -247,4 +256,3 @@ cat > admin.html << 'EOF'
     </script>
 </body>
 </html>
-EOF
