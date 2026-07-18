@@ -1,4 +1,3 @@
-cat > server.js << 'EOF'
 const express = require('express');
 const cors = require('cors');
 const app = express();
@@ -9,7 +8,7 @@ app.use(express.json());
 app.use(express.static('.'));
 
 // ========== DATA ==========
-let menu = [
+const menu = [
     { id: 1, name: "Beef Burger", price: 12.99, category: "Burgers", image: "🍔" },
     { id: 2, name: "Chicken Pizza", price: 15.99, category: "Pizza", image: "🍕" },
     { id: 3, name: "French Fries", price: 4.99, category: "Sides", image: "🍟" },
@@ -23,76 +22,24 @@ let menu = [
 let orders = [];
 let orderId = 1;
 
-// ========== USERS ==========
 const users = [
-    { id: 1, username: "admin", password: "admin123", role: "admin", name: "Admin" },
-    { id: 2, username: "waiter", password: "waiter123", role: "waiter", name: "Waiter" },
-    { id: 3, username: "chef", password: "chef123", role: "chef", name: "Chef" }
+    { username: "admin", password: "admin123", role: "admin" },
+    { username: "waiter", password: "waiter123", role: "waiter" },
+    { username: "chef", password: "chef123", role: "chef" }
 ];
 
-// Store active sessions
-let sessions = {};
-
-// ========== AUTH APIs ==========
+// ========== LOGIN ==========
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
     const user = users.find(u => u.username === username && u.password === password);
-    
     if (user) {
-        const token = Math.random().toString(36).substring(2) + Date.now().toString(36);
-        sessions[token] = {
-            userId: user.id,
-            username: user.username,
-            role: user.role,
-            name: user.name,
-            loginTime: new Date()
-        };
-        
-        res.json({
-            success: true,
-            token: token,
-            user: {
-                id: user.id,
-                username: user.username,
-                role: user.role,
-                name: user.name
-            }
-        });
+        res.json({ success: true, user: { username: user.username, role: user.role } });
     } else {
-        res.status(401).json({ 
-            success: false, 
-            error: 'Invalid username or password' 
-        });
+        res.status(401).json({ success: false, error: 'Invalid credentials' });
     }
 });
 
-app.post('/api/logout', (req, res) => {
-    const { token } = req.body;
-    if (token && sessions[token]) {
-        delete sessions[token];
-    }
-    res.json({ success: true });
-});
-
-app.post('/api/verify', (req, res) => {
-    const { token } = req.body;
-    if (token && sessions[token]) {
-        const session = sessions[token];
-        res.json({
-            success: true,
-            user: {
-                id: session.userId,
-                username: session.username,
-                role: session.role,
-                name: session.name
-            }
-        });
-    } else {
-        res.status(401).json({ success: false, error: 'Not authenticated' });
-    }
-});
-
-// ========== MENU APIs ==========
+// ========== MENU ==========
 app.get('/api/menu', (req, res) => {
     res.json(menu);
 });
@@ -110,26 +57,20 @@ app.post('/api/menu', (req, res) => {
     res.json({ success: true, item: newItem });
 });
 
-app.put('/api/menu/:id', (req, res) => {
+app.delete('/api/menu/:id', (req, res) => {
     const id = parseInt(req.params.id);
     const index = menu.findIndex(item => item.id === id);
     if (index !== -1) {
-        menu[index] = { ...menu[index], ...req.body };
-        res.json({ success: true, item: menu[index] });
+        menu.splice(index, 1);
+        res.json({ success: true });
     } else {
         res.status(404).json({ error: 'Item not found' });
     }
 });
 
-app.delete('/api/menu/:id', (req, res) => {
-    const id = parseInt(req.params.id);
-    menu = menu.filter(item => item.id !== id);
-    res.json({ success: true });
-});
-
-// ========== ORDER APIs ==========
+// ========== ORDERS ==========
 app.post('/api/order', (req, res) => {
-    const { customerName, phone, items, total, specialInstructions } = req.body;
+    const { customerName, phone, items, total, specialInstructions, tableNumber } = req.body;
     const order = {
         id: orderId++,
         customerName,
@@ -137,9 +78,9 @@ app.post('/api/order', (req, res) => {
         items,
         total: parseFloat(total),
         specialInstructions: specialInstructions || '',
-        status: 'pending', // pending → preparing → ready → served
+        status: 'pending',
         timestamp: new Date().toISOString(),
-        tableNumber: req.body.tableNumber || '1'
+        tableNumber: tableNumber || '1'
     };
     orders.push(order);
     res.json({ success: true, orderId: order.id });
@@ -151,18 +92,8 @@ app.get('/api/orders', (req, res) => {
     if (status) {
         filteredOrders = orders.filter(o => o.status === status);
     }
-    // Sort by newest first
     filteredOrders.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     res.json(filteredOrders);
-});
-
-app.get('/api/orders/:id', (req, res) => {
-    const order = orders.find(o => o.id === parseInt(req.params.id));
-    if (order) {
-        res.json(order);
-    } else {
-        res.status(404).json({ error: 'Order not found' });
-    }
 });
 
 app.put('/api/orders/:id', (req, res) => {
@@ -170,7 +101,6 @@ app.put('/api/orders/:id', (req, res) => {
     const order = orders.find(o => o.id === id);
     if (order) {
         order.status = req.body.status || order.status;
-        order.tableNumber = req.body.tableNumber || order.tableNumber;
         res.json({ success: true, order });
     } else {
         res.status(404).json({ error: 'Order not found' });
@@ -183,28 +113,19 @@ app.delete('/api/orders/:id', (req, res) => {
     res.json({ success: true });
 });
 
-// ========== STATISTICS ==========
+// ========== STATS ==========
 app.get('/api/stats', (req, res) => {
-    const totalOrders = orders.length;
-    const pendingOrders = orders.filter(o => o.status === 'pending').length;
-    const preparingOrders = orders.filter(o => o.status === 'preparing').length;
-    const readyOrders = orders.filter(o => o.status === 'ready').length;
-    const servedOrders = orders.filter(o => o.status === 'served').length;
-    const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
-    
     res.json({
-        totalOrders,
-        pendingOrders,
-        preparingOrders,
-        readyOrders,
-        servedOrders,
-        totalRevenue,
-        menuItems: menu.length
+        totalOrders: orders.length,
+        pendingOrders: orders.filter(o => o.status === 'pending').length,
+        preparingOrders: orders.filter(o => o.status === 'preparing').length,
+        readyOrders: orders.filter(o => o.status === 'ready').length,
+        servedOrders: orders.filter(o => o.status === 'served').length,
+        totalRevenue: orders.reduce((sum, o) => sum + o.total, 0)
     });
 });
 
+// ========== START SERVER ==========
 app.listen(PORT, () => {
     console.log(`🍽️ King Weliyano Restaurant Server running on port ${PORT}`);
-    console.log(`👥 Users: admin, waiter, chef`);
 });
-EOF
