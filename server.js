@@ -7,14 +7,15 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('.'));
 
-// ========== USERS ==========
+// ============================================================
+// DATA
+// ============================================================
 const users = [
     { username: 'admin', password: 'admin123', role: 'admin' },
     { username: 'waiter', password: 'waiter123', role: 'waiter' },
     { username: 'chef', password: 'chef123', role: 'chef' }
 ];
 
-// ========== MENU ==========
 const menu = [
     { id: 1, name: 'Beef Burger', price: 12.99, category: 'Burgers', image: '🍔' },
     { id: 2, name: 'Chicken Pizza', price: 15.99, category: 'Pizza', image: '🍕' },
@@ -29,8 +30,37 @@ const menu = [
 let orders = [];
 let orderId = 1;
 let sessions = {};
+let notifications = [];
 
-// ========== LOGIN ==========
+// ============================================================
+// NOTIFICATION HELPERS
+// ============================================================
+function addNotification(role, message, orderId, type = 'info') {
+    const notif = {
+        id: Date.now(),
+        role,
+        message,
+        orderId,
+        type,
+        read: false,
+        timestamp: new Date().toISOString()
+    };
+    notifications.push(notif);
+    return notif;
+}
+
+function getNotifications(role) {
+    return notifications.filter(n => n.role === role || n.role === 'all');
+}
+
+function markAsRead(id) {
+    const n = notifications.find(n => n.id === id);
+    if (n) n.read = true;
+}
+
+// ============================================================
+// AUTH
+// ============================================================
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
     const user = users.find(u => u.username === username && u.password === password);
@@ -58,7 +88,9 @@ app.post('/api/verify', (req, res) => {
     }
 });
 
-// ========== MENU APIs ==========
+// ============================================================
+// MENU
+// ============================================================
 app.get('/api/menu', (req, res) => res.json(menu));
 
 app.post('/api/menu', (req, res) => {
@@ -70,18 +102,30 @@ app.post('/api/menu', (req, res) => {
 
 app.delete('/api/menu/:id', (req, res) => {
     const id = parseInt(req.params.id);
-    const index = menu.findIndex(item => item.id === id);
-    if (index !== -1) {
-        menu.splice(index, 1);
+    const idx = menu.findIndex(item => item.id === id);
+    if (idx !== -1) {
+        menu.splice(idx, 1);
         res.json({ success: true });
     } else {
         res.status(404).json({ error: 'Item not found' });
     }
 });
 
-// ========== ORDERS ==========
+// ============================================================
+// ORDERS
+// ============================================================
 app.post('/api/order', (req, res) => {
-    const { customerName, phone, items, total, specialInstructions, tableNumber } = req.body;
+    const {
+        customerName,
+        phone,
+        items,
+        total,
+        specialInstructions,
+        tableNumber,
+        paymentMethod,
+        paymentDetails
+    } = req.body;
+
     const order = {
         id: orderId++,
         customerName,
@@ -91,10 +135,34 @@ app.post('/api/order', (req, res) => {
         specialInstructions: specialInstructions || '',
         status: 'pending',
         timestamp: new Date().toISOString(),
-        tableNumber: tableNumber || '1'
+        tableNumber: tableNumber || '1',
+        paymentMethod: paymentMethod || 'cash',
+        paymentDetails: paymentDetails || {}
     };
+
     orders.push(order);
-    res.json({ success: true, orderId: order.id });
+
+    // 🔔 Chef notification
+    addNotification(
+        'chef',
+        `🔔 New Order #${order.id} from ${customerName}! (${paymentMethod})`,
+        order.id,
+        'info'
+    );
+
+    // 🔔 Customer notification (they'll see it on reload)
+    addNotification(
+        'customer',
+        `✅ Order #${order.id} placed successfully! Chef is preparing it.`,
+        order.id,
+        'success'
+    );
+
+    res.json({
+        success: true,
+        orderId: order.id,
+        message: 'Order placed! Chef has been notified.'
+    });
 });
 
 app.get('/api/orders', (req, res) => {
@@ -106,12 +174,66 @@ app.get('/api/orders', (req, res) => {
 app.put('/api/orders/:id', (req, res) => {
     const id = parseInt(req.params.id);
     const order = orders.find(o => o.id === id);
-    if (order) {
-        order.status = req.body.status || order.status;
-        res.json({ success: true, order });
-    } else {
-        res.status(404).json({ error: 'Order not found' });
+    if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
     }
+
+    const oldStatus = order.status;
+    order.status = req.body.status || order.status;
+
+    // ===== NOTIFICATIONS BASED ON STATUS CHANGE =====
+    if (order.status === 'preparing' && oldStatus === 'pending') {
+        addNotification(
+            'customer',
+            `👨‍🍳 Chef is cooking your order #${order.id}!`,
+            order.id,
+            'info'
+        );
+        addNotification(
+            'all',
+            `🔪 Chef started cooking Order #${order.id}`,
+            order.id,
+            'info'
+        );
+    }
+
+    if (order.status === 'ready' && oldStatus === 'preparing') {
+        addNotification(
+            'waiter',
+            `✅ Order #${order.id} is READY to serve!`,
+            order.id,
+            'success'
+        );
+        addNotification(
+            'customer',
+            `✅ Your order #${order.id} is ready for pickup!`,
+            order.id,
+            'success'
+        );
+        addNotification(
+            'all',
+            `🍽️ Order #${order.id} is ready for service`,
+            order.id,
+            'success'
+        );
+    }
+
+    if (order.status === 'served' && oldStatus === 'ready') {
+        addNotification(
+            'chef',
+            `🍽️ Order #${order.id} has been served to customer`,
+            order.id,
+            'success'
+        );
+        addNotification(
+            'customer',
+            `🍽️ Your order #${order.id} has been served! Enjoy your meal!`,
+            order.id,
+            'success'
+        );
+    }
+
+    res.json({ success: true, order });
 });
 
 app.delete('/api/orders/:id', (req, res) => {
@@ -120,7 +242,27 @@ app.delete('/api/orders/:id', (req, res) => {
     res.json({ success: true });
 });
 
-// ========== STATS ==========
+// ============================================================
+// NOTIFICATIONS API
+// ============================================================
+app.get('/api/notifications', (req, res) => {
+    const { role } = req.query;
+    let result = notifications;
+    if (role) {
+        result = notifications.filter(n => n.role === role || n.role === 'all');
+    }
+    result.sort((a, b) => b.id - a.id);
+    res.json(result);
+});
+
+app.put('/api/notifications/:id/read', (req, res) => {
+    markAsRead(parseInt(req.params.id));
+    res.json({ success: true });
+});
+
+// ============================================================
+// STATS
+// ============================================================
 app.get('/api/stats', (req, res) => {
     res.json({
         totalOrders: orders.length,
@@ -132,8 +274,11 @@ app.get('/api/stats', (req, res) => {
     });
 });
 
-// ========== START ==========
+// ============================================================
+// START
+// ============================================================
 app.listen(PORT, () => {
     console.log(`🍽️ Server running on port ${PORT}`);
     console.log(`👥 Users: admin, waiter, chef`);
+    console.log(`🔔 Notification system active!`);
 });
