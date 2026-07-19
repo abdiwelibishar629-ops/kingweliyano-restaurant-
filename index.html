@@ -19,7 +19,7 @@
             background: #c0392b;
             color: white;
             padding: 20px 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         }
         .header-content {
             max-width: 1200px;
@@ -42,7 +42,7 @@
             transition: background 0.3s;
         }
         nav a:hover {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
         }
         .container {
             max-width: 1200px;
@@ -82,7 +82,7 @@
             border-radius: 15px;
             padding: 20px;
             text-align: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             transition: transform 0.3s;
         }
         .menu-card:hover {
@@ -124,7 +124,7 @@
             background: white;
             border-radius: 15px;
             padding: 30px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             margin-top: 30px;
         }
         .cart-header {
@@ -202,6 +202,81 @@
             resize: vertical;
             min-height: 60px;
         }
+
+        /* PAYMENT SECTION */
+        .payment-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 2px solid #ecf0f1;
+        }
+        .payment-section h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        .payment-options {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .payment-option {
+            flex: 1;
+            min-width: 120px;
+            padding: 15px 20px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+            background: white;
+        }
+        .payment-option:hover {
+            border-color: #c0392b;
+            transform: translateY(-2px);
+        }
+        .payment-option.selected {
+            border-color: #c0392b;
+            background: #fdf2f2;
+            box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.2);
+        }
+        .payment-option .icon {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .payment-option .label {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .payment-option .sub-label {
+            font-size: 0.75rem;
+            color: #7f8c8d;
+        }
+        .payment-details {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #ecf0f1;
+            display: none;
+        }
+        .payment-details.active {
+            display: block;
+        }
+        .payment-details input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 5px 0;
+        }
+        .payment-details .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
         .btn-primary {
             background: #c0392b;
             color: white;
@@ -243,6 +318,53 @@
             padding: 20px;
             margin-top: 40px;
         }
+        /* Notification Bell */
+        .notif-bell {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            font-size: 1.5rem;
+        }
+        .notif-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 8px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        .notif-dropdown {
+            display: none;
+            position: fixed;
+            right: 20px;
+            top: 80px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            width: 350px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            padding: 10px;
+        }
+        .notif-dropdown.show {
+            display: block;
+        }
+        .notif-item {
+            padding: 10px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        .notif-item.unread {
+            background: #fdf2f2;
+        }
+        .notif-item .time {
+            font-size: 0.7rem;
+            color: #7f8c8d;
+        }
+
         @media (max-width: 768px) {
             .header-content {
                 flex-direction: column;
@@ -257,6 +379,17 @@
             .hero h2 {
                 font-size: 2rem;
             }
+            .payment-options {
+                flex-direction: column;
+            }
+            .payment-details .row {
+                grid-template-columns: 1fr;
+            }
+            .notif-dropdown {
+                width: 300px;
+                right: 10px;
+                top: 120px;
+            }
         }
         @media (max-width: 480px) {
             #menu-grid {
@@ -269,31 +402,44 @@
                 flex-direction: column;
                 gap: 10px;
             }
+            .notif-dropdown {
+                width: 280px;
+                right: 5px;
+                top: 110px;
+            }
         }
     </style>
 </head>
 <body>
 
-    <!-- ===== HEADER ===== -->
     <header>
         <div class="header-content">
             <h1>🍽️ King Weliyano Restaurant</h1>
             <nav>
                 <a href="index.html">🏠 Home</a>
                 <a href="login.html">🔐 Staff Login</a>
+                <span class="notif-bell" onclick="toggleNotifDropdown()">
+                    🔔
+                    <span class="notif-badge" id="customerNotifCount">0</span>
+                </span>
             </nav>
         </div>
     </header>
 
-    <!-- ===== MAIN CONTENT ===== -->
     <div class="container">
-        <!-- Hero Section -->
+
+        <!-- Notification Dropdown -->
+        <div class="notif-dropdown" id="customerNotifDropdown">
+            <div id="customerNotifList"></div>
+        </div>
+
+        <!-- Hero -->
         <section class="hero">
             <h2>Welcome to King Weliyano</h2>
             <p>Delicious food made with love. Order now!</p>
         </section>
 
-        <!-- Menu Section -->
+        <!-- Menu -->
         <section class="menu-section">
             <h2>📋 Our Menu</h2>
             <div id="menu-grid">
@@ -304,7 +450,7 @@
             </div>
         </section>
 
-        <!-- Cart Section -->
+        <!-- Cart -->
         <section class="cart-section">
             <div class="cart-header">
                 <h2>🛒 Your Order</h2>
@@ -320,7 +466,7 @@
                 <strong>Total: $<span id="total">0.00</span></strong>
             </div>
 
-            <!-- Customer Info Form -->
+            <!-- Customer Info -->
             <div class="customer-info">
                 <input type="text" id="customer-name" placeholder="Your Name *" required>
                 <input type="tel" id="phone" placeholder="Phone Number *" required>
@@ -328,57 +474,100 @@
                 <textarea id="special-instructions" placeholder="Special instructions (allergies, etc.)"></textarea>
             </div>
 
+            <!-- PAYMENT -->
+            <div class="payment-section">
+                <h3>💳 Payment Method</h3>
+                <div class="payment-options">
+                    <div class="payment-option" onclick="selectPayment('card')" id="opt-card">
+                        <span class="icon">💳</span>
+                        <span class="label">Card</span>
+                        <span class="sub-label">Credit/Debit</span>
+                    </div>
+                    <div class="payment-option" onclick="selectPayment('mpesa')" id="opt-mpesa">
+                        <span class="icon">📱</span>
+                        <span class="label">M-Pesa</span>
+                        <span class="sub-label">Mobile Money</span>
+                    </div>
+                    <div class="payment-option" onclick="selectPayment('cash')" id="opt-cash">
+                        <span class="icon">💵</span>
+                        <span class="label">Cash</span>
+                        <span class="sub-label">Pay at restaurant</span>
+                    </div>
+                </div>
+
+                <!-- Card -->
+                <div class="payment-details" id="details-card">
+                    <p style="margin-bottom:10px;color:#2c3e50;">💳 Enter Card Details:</p>
+                    <input type="text" id="card-number" placeholder="Card Number (e.g. 4111 1111 1111 1111)">
+                    <div class="row">
+                        <input type="text" id="card-expiry" placeholder="Expiry (MM/YY)">
+                        <input type="text" id="card-cvv" placeholder="CVV">
+                    </div>
+                    <input type="text" id="card-name" placeholder="Name on Card">
+                </div>
+
+                <!-- M-Pesa -->
+                <div class="payment-details" id="details-mpesa">
+                    <p style="margin-bottom:10px;color:#2c3e50;">📱 Enter M-Pesa Details:</p>
+                    <input type="tel" id="mpesa-number" placeholder="M-Pesa Phone Number (e.g. 0712345678)">
+                    <p style="font-size:0.8rem;color:#7f8c8d;margin-top:5px;">You will receive a prompt on your phone to confirm payment.</p>
+                </div>
+
+                <!-- Cash -->
+                <div class="payment-details" id="details-cash">
+                    <p style="margin-bottom:10px;color:#2c3e50;">💵 Cash Payment</p>
+                    <p style="color:#7f8c8d;">Pay with cash when you arrive at the restaurant.</p>
+                    <p style="color:#7f8c8d;font-size:0.9rem;">Please have exact change if possible.</p>
+                </div>
+            </div>
+
             <button class="btn-primary" onclick="placeOrder()">✅ Place Order</button>
             <div id="order-status"></div>
         </section>
     </div>
 
-    <!-- ===== FOOTER ===== -->
     <footer>
         <p>© 2024 King Weliyano Restaurant. All rights reserved.</p>
     </footer>
 
-    <!-- ===== JAVASCRIPT ===== -->
     <script>
-        // ========== DATA ==========
+        // ============================================================
+        // DATA
+        // ============================================================
         let cart = [];
         let menu = [];
+        let selectedPayment = null;
 
-        // ========== LOAD MENU ==========
+        // ============================================================
+        // MENU
+        // ============================================================
         async function loadMenu() {
             try {
-                const response = await fetch('/api/menu');
-                if (!response.ok) {
-                    throw new Error('Failed to load menu');
-                }
-                menu = await response.json();
+                const res = await fetch('/api/menu');
+                if (!res.ok) throw new Error('Failed to load menu');
+                menu = await res.json();
                 displayMenu();
             } catch (error) {
-                console.error('Error loading menu:', error);
                 document.getElementById('menu-grid').innerHTML = `
                     <div style="text-align:center;padding:40px;color:#e74c3c;grid-column:1/-1;">
                         <h3>⚠️ Error Loading Menu</h3>
-                        <p>Please refresh the page or try again later.</p>
+                        <p>Please refresh the page.</p>
                     </div>
                 `;
             }
         }
 
-        // ========== DISPLAY MENU ==========
         function displayMenu() {
             const grid = document.getElementById('menu-grid');
             grid.innerHTML = '';
-            
             if (menu.length === 0) {
                 grid.innerHTML = `
                     <div style="text-align:center;padding:40px;color:#7f8c8d;grid-column:1/-1;">
                         <h3>🍽️ No menu items available</h3>
-                        <p>Please check back later.</p>
                     </div>
                 `;
                 return;
             }
-
             menu.forEach(item => {
                 grid.innerHTML += `
                     <div class="menu-card">
@@ -392,36 +581,29 @@
             });
         }
 
-        // ========== ADD TO CART ==========
+        // ============================================================
+        // CART
+        // ============================================================
         function addToCart(id) {
             const item = menu.find(i => i.id === id);
-            if (!item) {
-                showNotification('❌ Item not found!', 'error');
-                return;
-            }
-
+            if (!item) return showNotification('❌ Item not found!', 'error');
             const existing = cart.find(i => i.id === id);
-            if (existing) {
-                existing.quantity++;
-            } else {
-                cart.push({ ...item, quantity: 1 });
-            }
+            if (existing) existing.quantity++;
+            else cart.push({ ...item, quantity: 1 });
             updateCart();
             showNotification(`✅ Added ${item.name} to cart!`);
         }
 
-        // ========== REMOVE FROM CART ==========
         function removeFromCart(id) {
             cart = cart.filter(i => i.id !== id);
             updateCart();
         }
 
-        // ========== UPDATE CART ==========
         function updateCart() {
             const cartItems = document.getElementById('cart-items');
             const cartCount = document.getElementById('cart-count');
-            let total = 0;
-            let itemCount = 0;
+            let total = 0,
+                itemCount = 0;
 
             if (cart.length === 0) {
                 cartItems.innerHTML = `
@@ -453,47 +635,72 @@
             document.getElementById('total').textContent = total.toFixed(2);
         }
 
-        // ========== PLACE ORDER ==========
+        // ============================================================
+        // PAYMENT
+        // ============================================================
+        function selectPayment(method) {
+            selectedPayment = method;
+            document.querySelectorAll('.payment-option').forEach(opt => opt.classList.remove('selected'));
+            document.getElementById(`opt-${method}`).classList.add('selected');
+            document.querySelectorAll('.payment-details').forEach(d => d.classList.remove('active'));
+            document.getElementById(`details-${method}`).classList.add('active');
+        }
+
+        // ============================================================
+        // PLACE ORDER
+        // ============================================================
         async function placeOrder() {
             const name = document.getElementById('customer-name').value.trim();
             const phone = document.getElementById('phone').value.trim();
             const tableNumber = document.getElementById('table-number').value.trim();
             const specialInstructions = document.getElementById('special-instructions').value.trim();
 
-            if (!name || !phone) {
-                showNotification('⚠️ Please enter your name and phone number!', 'error');
-                return;
+            if (!name || !phone) return showNotification('⚠️ Please enter your name and phone number!', 'error');
+            if (cart.length === 0) return showNotification('⚠️ Your cart is empty!', 'error');
+            if (!selectedPayment) return showNotification('⚠️ Please select a payment method!', 'error');
+
+            let paymentDetails = {};
+            if (selectedPayment === 'card') {
+                const cardNumber = document.getElementById('card-number').value.trim();
+                const cardExpiry = document.getElementById('card-expiry').value.trim();
+                const cardCvv = document.getElementById('card-cvv').value.trim();
+                const cardName = document.getElementById('card-name').value.trim();
+                if (!cardNumber || !cardExpiry || !cardCvv || !cardName) {
+                    return showNotification('⚠️ Please fill in all card details!', 'error');
+                }
+                paymentDetails = { cardNumber, cardExpiry, cardCvv, cardName };
+            } else if (selectedPayment === 'mpesa') {
+                const mpesaNumber = document.getElementById('mpesa-number').value.trim();
+                if (!mpesaNumber) return showNotification('⚠️ Please enter your M-Pesa phone number!', 'error');
+                paymentDetails = { mpesaNumber };
             }
 
-            if (cart.length === 0) {
-                showNotification('⚠️ Your cart is empty!', 'error');
-                return;
-            }
-
-            const placeBtn = document.querySelector('.btn-primary');
-            placeBtn.disabled = true;
-            placeBtn.textContent = '⏳ Placing Order...';
+            const btn = document.querySelector('.btn-primary');
+            btn.disabled = true;
+            btn.textContent = '⏳ Processing...';
 
             try {
-                const response = await fetch('/api/order', {
+                const res = await fetch('/api/order', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         customerName: name,
-                        phone: phone,
+                        phone,
                         items: cart,
                         total: parseFloat(document.getElementById('total').textContent),
                         tableNumber: tableNumber || '1',
-                        specialInstructions: specialInstructions || ''
+                        specialInstructions: specialInstructions || '',
+                        paymentMethod: selectedPayment,
+                        paymentDetails
                     })
                 });
 
-                const result = await response.json();
-
+                const result = await res.json();
                 if (result.success) {
                     document.getElementById('order-status').innerHTML = `
                         <div class="success-message">
                             ✅ <strong>Order #${result.orderId} placed successfully!</strong>
+                            <p style="margin-top:5px;font-size:0.9rem;">Payment: ${selectedPayment.toUpperCase()}</p>
                             <p style="margin-top:5px;font-size:0.9rem;">Your food is being prepared. Thank you!</p>
                         </div>
                     `;
@@ -503,19 +710,70 @@
                     document.getElementById('phone').value = '';
                     document.getElementById('table-number').value = '';
                     document.getElementById('special-instructions').value = '';
+                    selectedPayment = null;
+                    document.querySelectorAll('.payment-option').forEach(o => o.classList.remove('selected'));
+                    document.querySelectorAll('.payment-details').forEach(d => d.classList.remove('active'));
                     showNotification(`✅ Order #${result.orderId} placed!`);
+                    loadCustomerNotifications(); // refresh notifications
                 } else {
                     showNotification('❌ Failed to place order. Please try again.', 'error');
                 }
             } catch (error) {
-                showNotification('❌ Error connecting to server. Please try again.', 'error');
+                showNotification('❌ Error connecting to server.', 'error');
             } finally {
-                placeBtn.disabled = false;
-                placeBtn.textContent = '✅ Place Order';
+                btn.disabled = false;
+                btn.textContent = '✅ Place Order';
             }
         }
 
-        // ========== NOTIFICATION ==========
+        // ============================================================
+        // NOTIFICATIONS
+        // ============================================================
+        let customerNotifications = [];
+
+        async function loadCustomerNotifications() {
+            try {
+                const res = await fetch('/api/notifications?role=customer');
+                customerNotifications = await res.json();
+                updateCustomerNotifUI();
+            } catch (e) { console.error('Notif error:', e); }
+        }
+
+        function updateCustomerNotifUI() {
+            const unread = customerNotifications.filter(n => !n.read).length;
+            document.getElementById('customerNotifCount').textContent = unread;
+
+            const list = document.getElementById('customerNotifList');
+            if (customerNotifications.length === 0) {
+                list.innerHTML = '<p style="color:#7f8c8d;text-align:center;padding:10px;">No notifications</p>';
+                return;
+            }
+            list.innerHTML = customerNotifications.map(n => `
+                <div class="notif-item ${n.read ? '' : 'unread'}">
+                    <p style="margin:0;font-size:0.9rem;">${n.message}</p>
+                    <span class="time">${new Date(n.timestamp).toLocaleString()}</span>
+                </div>
+            `).join('');
+        }
+
+        function toggleNotifDropdown() {
+            const dd = document.getElementById('customerNotifDropdown');
+            dd.classList.toggle('show');
+            if (dd.classList.contains('show')) loadCustomerNotifications();
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const dd = document.getElementById('customerNotifDropdown');
+            const bell = document.querySelector('.notif-bell');
+            if (!bell.contains(e.target) && !dd.contains(e.target)) {
+                dd.classList.remove('show');
+            }
+        });
+
+        // ============================================================
+        // NOTIFICATION
+        // ============================================================
         function showNotification(message, type = 'success') {
             const status = document.getElementById('order-status');
             const color = type === 'error' ? '#e74c3c' : '#27ae60';
@@ -527,8 +785,12 @@
             setTimeout(() => { status.innerHTML = ''; }, 5000);
         }
 
-        // ========== LOAD MENU ==========
+        // ============================================================
+        // INIT
+        // ============================================================
         loadMenu();
+        loadCustomerNotifications();
+        setInterval(loadCustomerNotifications, 10000);
     </script>
 </body>
 </html>
