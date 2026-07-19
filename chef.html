@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>👨‍🍳 Chef Dashboard - King Weliyano</title>
+    <title>👨‍🍳 Waiter Dashboard - King Weliyano</title>
     <link rel="stylesheet" href="dashboard.css">
     <style>
         .notif-bell {
@@ -111,23 +111,23 @@
         }
 
         const user = JSON.parse(localStorage.getItem('user') || '{}');
-        if (user.role !== 'chef' && user.role !== 'admin') {
-            alert('Access denied. Chefs only.');
+        if (user.role !== 'waiter' && user.role !== 'admin') {
+            alert('Access denied. Waiters only.');
             window.location.href = 'login.html';
         }
     </script>
 
     <header>
         <div class="header-content">
-            <h1>👨‍🍳 King Weliyano - Chef Dashboard</h1>
+            <h1>👨‍🍳 King Weliyano - Waiter Dashboard</h1>
             <nav>
                 <a href="index.html">🏠 Home</a>
                 <a href="waiter.html">👨‍🍳 Waiter</a>
                 <a href="chef.html">👨‍🍳 Chef</a>
                 <a href="admin.html">👑 Admin</a>
-                <span class="notif-bell" onclick="toggleChefNotif()">
+                <span class="notif-bell" onclick="toggleWaiterNotif()">
                     🔔
-                    <span class="notif-badge" id="chefNotifCount">0</span>
+                    <span class="notif-badge" id="waiterNotifCount">0</span>
                 </span>
                 <a href="#" onclick="logout()">🚪 Logout</a>
             </nav>
@@ -137,17 +137,18 @@
     <div class="container">
 
         <!-- Notification Dropdown -->
-        <div class="notif-dropdown" id="chefNotifDropdown">
-            <div id="chefNotifList"></div>
+        <div class="notif-dropdown" id="waiterNotifDropdown">
+            <div id="waiterNotifList"></div>
         </div>
 
         <div class="dashboard-header">
-            <h2>🔪 Kitchen Orders</h2>
+            <h2>📋 All Orders</h2>
             <div class="filter-buttons">
-                <button onclick="loadOrders('pending')" class="btn-filter active">⏳ Pending</button>
+                <button onclick="loadOrders('all')" class="btn-filter active">📋 All</button>
+                <button onclick="loadOrders('pending')" class="btn-filter">⏳ Pending</button>
                 <button onclick="loadOrders('preparing')" class="btn-filter">🔪 Preparing</button>
                 <button onclick="loadOrders('ready')" class="btn-filter">✅ Ready</button>
-                <button onclick="loadOrders('all')" class="btn-filter">📋 All</button>
+                <button onclick="loadOrders('served')" class="btn-filter">🍽️ Served</button>
             </div>
         </div>
         <div id="orders-container"></div>
@@ -159,28 +160,28 @@
 
     <script>
         // ============================================================
-        // CHEF NOTIFICATIONS
+        // WAITER NOTIFICATIONS
         // ============================================================
-        let chefNotifications = [];
+        let waiterNotifications = [];
 
-        async function loadChefNotifications() {
+        async function loadWaiterNotifications() {
             try {
-                const res = await fetch('/api/notifications?role=chef');
-                chefNotifications = await res.json();
-                updateChefNotifUI();
+                const res = await fetch('/api/notifications?role=waiter');
+                waiterNotifications = await res.json();
+                updateWaiterNotifUI();
             } catch (e) { console.error('Notif error:', e); }
         }
 
-        function updateChefNotifUI() {
-            const unread = chefNotifications.filter(n => !n.read).length;
-            document.getElementById('chefNotifCount').textContent = unread;
+        function updateWaiterNotifUI() {
+            const unread = waiterNotifications.filter(n => !n.read).length;
+            document.getElementById('waiterNotifCount').textContent = unread;
 
-            const list = document.getElementById('chefNotifList');
-            if (chefNotifications.length === 0) {
+            const list = document.getElementById('waiterNotifList');
+            if (waiterNotifications.length === 0) {
                 list.innerHTML = '<p style="color:#7f8c8d;text-align:center;padding:10px;">No notifications</p>';
                 return;
             }
-            list.innerHTML = chefNotifications.map(n => `
+            list.innerHTML = waiterNotifications.map(n => `
                 <div class="notif-item ${n.read ? '' : 'unread'}">
                     <p style="margin:0;font-size:0.9rem;">${n.message}</p>
                     <span class="time">${new Date(n.timestamp).toLocaleString()}</span>
@@ -188,14 +189,14 @@
             `).join('');
         }
 
-        function toggleChefNotif() {
-            const dd = document.getElementById('chefNotifDropdown');
+        function toggleWaiterNotif() {
+            const dd = document.getElementById('waiterNotifDropdown');
             dd.classList.toggle('show');
-            if (dd.classList.contains('show')) loadChefNotifications();
+            if (dd.classList.contains('show')) loadWaiterNotifications();
         }
 
         document.addEventListener('click', function(e) {
-            const dd = document.getElementById('chefNotifDropdown');
+            const dd = document.getElementById('waiterNotifDropdown');
             const bell = document.querySelector('.notif-bell');
             if (bell && !bell.contains(e.target) && !dd.contains(e.target)) {
                 dd.classList.remove('show');
@@ -205,25 +206,25 @@
         // ============================================================
         // ORDERS
         // ============================================================
-        let currentStatus = 'pending';
+        let currentStatus = 'all';
 
-        async function loadOrders(status = 'pending') {
+        async function loadOrders(status = 'all') {
             currentStatus = status;
             const url = status === 'all' ? '/api/orders' : `/api/orders?status=${status}`;
             try {
                 const res = await fetch(url);
                 const orders = await res.json();
-                displayOrders(orders, status);
+                displayOrders(orders);
             } catch (e) { console.error('Error loading orders:', e); }
         }
 
-        function displayOrders(orders, currentStatus) {
+        function displayOrders(orders) {
             const container = document.getElementById('orders-container');
             if (orders.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
-                        <h2>🍽️ No ${currentStatus} orders</h2>
-                        <p>Waiting for new orders from customers...</p>
+                        <h2>📭 No orders found</h2>
+                        <p>Orders will appear here when customers place them.</p>
                     </div>
                 `;
                 return;
@@ -253,21 +254,19 @@
                         <p class="order-total"><strong>Total: $${order.total.toFixed(2)}</strong></p>
                     </div>
                     <div class="order-actions">
-                        ${order.status === 'pending' ? `
-                            <button onclick="updateOrder(${order.id}, 'preparing')" class="btn-prepare">
-                                🔪 Start Cooking
+                        ${order.status === 'ready' ? `
+                            <button onclick="updateOrder(${order.id}, 'served')" class="btn-served">
+                                🍽️ Mark as Served
                             </button>
+                        ` : ''}
+                        ${order.status === 'pending' ? `
+                            <span style="color:#f39c12;font-weight:bold;">⏳ Waiting for chef</span>
                         ` : ''}
                         ${order.status === 'preparing' ? `
-                            <button onclick="updateOrder(${order.id}, 'ready')" class="btn-ready">
-                                ✅ Done Cooking
-                            </button>
-                        ` : ''}
-                        ${order.status === 'ready' ? `
-                            <span style="color:#27ae60;font-weight:bold;">✅ Ready for waiter</span>
+                            <span style="color:#3498db;font-weight:bold;">🔪 Chef is cooking</span>
                         ` : ''}
                         ${order.status === 'served' ? `
-                            <span style="color:#9b59b6;font-weight:bold;">🍽️ Served to customer</span>
+                            <span style="color:#9b59b6;font-weight:bold;">✅ Served to customer</span>
                         ` : ''}
                     </div>
                 </div>
@@ -288,7 +287,7 @@
                 const result = await res.json();
                 if (result.success) {
                     loadOrders(currentStatus);
-                    loadChefNotifications();
+                    loadWaiterNotifications();
                 }
             } catch (e) {
                 console.error('Error updating order:', e);
@@ -299,11 +298,11 @@
         // Auto-refresh
         setInterval(() => {
             loadOrders(currentStatus);
-            loadChefNotifications();
+            loadWaiterNotifications();
         }, 5000);
 
-        loadOrders('pending');
-        loadChefNotifications();
+        loadOrders('all');
+        loadWaiterNotifications();
     </script>
 </body>
 </html>
