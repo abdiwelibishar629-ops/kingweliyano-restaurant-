@@ -5,37 +5,97 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>👑 Admin Dashboard - King Weliyano</title>
     <link rel="stylesheet" href="dashboard.css">
+    <style>
+        .notif-bell {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            font-size: 1.5rem;
+            margin-right: 15px;
+        }
+        .notif-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 8px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        .notif-dropdown {
+            display: none;
+            position: fixed;
+            right: 20px;
+            top: 80px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            width: 350px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            padding: 10px;
+        }
+        .notif-dropdown.show {
+            display: block;
+        }
+        .notif-item {
+            padding: 10px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        .notif-item.unread {
+            background: #fdf2f2;
+        }
+        .notif-item .time {
+            font-size: 0.7rem;
+            color: #7f8c8d;
+        }
+        @media (max-width: 768px) {
+            .notif-dropdown {
+                width: 300px;
+                right: 10px;
+                top: 120px;
+            }
+        }
+        @media (max-width: 480px) {
+            .notif-dropdown {
+                width: 280px;
+                right: 5px;
+                top: 110px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <!-- ===== LOGIN PROTECTION ===== -->
-    <script>
-        // Check if logged in
-        const token = localStorage.getItem('authToken');
-        if (!token) {
-            window.location.href = 'login.html';
-        }
 
-        // Verify token with server
+    <script>
+        // ============================================================
+        // AUTH CHECK
+        // ============================================================
+        const token = localStorage.getItem('authToken');
+        if (!token) window.location.href = 'login.html';
+
         async function verifyAuth() {
             try {
-                const response = await fetch('/api/verify', {
+                const res = await fetch('/api/verify', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token })
                 });
-                const result = await response.json();
+                const result = await res.json();
                 if (!result.success) {
                     localStorage.removeItem('authToken');
                     localStorage.removeItem('user');
                     window.location.href = 'login.html';
                 }
-            } catch (error) {
+            } catch (e) {
                 window.location.href = 'login.html';
             }
         }
         verifyAuth();
 
-        // Logout function
         function logout() {
             const token = localStorage.getItem('authToken');
             if (token) {
@@ -50,7 +110,6 @@
             window.location.href = 'login.html';
         }
 
-        // Get user info
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         if (user.role !== 'admin') {
             alert('Access denied. Admin only.');
@@ -66,12 +125,22 @@
                 <a href="waiter.html">👨‍🍳 Waiter</a>
                 <a href="chef.html">👨‍🍳 Chef</a>
                 <a href="admin.html">👑 Admin</a>
+                <span class="notif-bell" onclick="toggleAdminNotif()">
+                    🔔
+                    <span class="notif-badge" id="adminNotifCount">0</span>
+                </span>
                 <a href="#" onclick="logout()">🚪 Logout</a>
             </nav>
         </div>
     </header>
 
     <div class="container">
+
+        <!-- Notification Dropdown -->
+        <div class="notif-dropdown" id="adminNotifDropdown">
+            <div id="adminNotifList"></div>
+        </div>
+
         <!-- Stats -->
         <div class="stats-grid">
             <div class="stat-card"><div class="number" id="total-orders">0</div><div class="label">Total Orders</div></div>
@@ -107,27 +176,73 @@
     </footer>
 
     <script>
-        // ===== STATS =====
+        // ============================================================
+        // ADMIN NOTIFICATIONS
+        // ============================================================
+        let adminNotifications = [];
+
+        async function loadAdminNotifications() {
+            try {
+                const res = await fetch('/api/notifications?role=all');
+                adminNotifications = await res.json();
+                updateAdminNotifUI();
+            } catch (e) { console.error('Notif error:', e); }
+        }
+
+        function updateAdminNotifUI() {
+            const unread = adminNotifications.filter(n => !n.read).length;
+            document.getElementById('adminNotifCount').textContent = unread;
+
+            const list = document.getElementById('adminNotifList');
+            if (adminNotifications.length === 0) {
+                list.innerHTML = '<p style="color:#7f8c8d;text-align:center;padding:10px;">No notifications</p>';
+                return;
+            }
+            list.innerHTML = adminNotifications.map(n => `
+                <div class="notif-item ${n.read ? '' : 'unread'}">
+                    <p style="margin:0;font-size:0.9rem;">${n.message}</p>
+                    <span class="time">${new Date(n.timestamp).toLocaleString()}</span>
+                </div>
+            `).join('');
+        }
+
+        function toggleAdminNotif() {
+            const dd = document.getElementById('adminNotifDropdown');
+            dd.classList.toggle('show');
+            if (dd.classList.contains('show')) loadAdminNotifications();
+        }
+
+        document.addEventListener('click', function(e) {
+            const dd = document.getElementById('adminNotifDropdown');
+            const bell = document.querySelector('.notif-bell');
+            if (bell && !bell.contains(e.target) && !dd.contains(e.target)) {
+                dd.classList.remove('show');
+            }
+        });
+
+        // ============================================================
+        // STATS
+        // ============================================================
         async function loadStats() {
             try {
-                const response = await fetch('/api/stats');
-                const stats = await response.json();
+                const res = await fetch('/api/stats');
+                const stats = await res.json();
                 document.getElementById('total-orders').textContent = stats.totalOrders;
                 document.getElementById('pending-orders').textContent = stats.pendingOrders;
                 document.getElementById('preparing-orders').textContent = stats.preparingOrders;
                 document.getElementById('ready-orders').textContent = stats.readyOrders;
                 document.getElementById('served-orders').textContent = stats.servedOrders;
                 document.getElementById('total-revenue').textContent = `$${stats.totalRevenue.toFixed(2)}`;
-            } catch (error) {
-                console.error('Error loading stats:', error);
-            }
+            } catch (e) { console.error('Error loading stats:', e); }
         }
 
-        // ===== MENU MANAGEMENT =====
+        // ============================================================
+        // MENU MANAGEMENT
+        // ============================================================
         async function loadMenuItems() {
             try {
-                const response = await fetch('/api/menu');
-                const menu = await response.json();
+                const res = await fetch('/api/menu');
+                const menu = await res.json();
                 const container = document.getElementById('menu-items-list');
                 if (menu.length === 0) {
                     container.innerHTML = '<p style="color:#7f8c8d;">No menu items yet. Add one above!</p>';
@@ -142,9 +257,7 @@
                         <button onclick="deleteMenuItem(${item.id})" class="btn-delete-item">✕</button>
                     </div>
                 `).join('');
-            } catch (error) {
-                console.error('Error loading menu:', error);
-            }
+            } catch (e) { console.error('Error loading menu:', e); }
         }
 
         async function addMenuItem() {
@@ -152,12 +265,12 @@
             const price = document.getElementById('item-price').value;
             const category = document.getElementById('item-category').value.trim();
             const image = document.getElementById('item-image').value.trim() || '🍽️';
-            
+
             if (!name || !price) {
                 alert('Please enter name and price!');
                 return;
             }
-            
+
             try {
                 await fetch('/api/menu', {
                     method: 'POST',
@@ -170,8 +283,8 @@
                 document.getElementById('item-image').value = '';
                 loadMenuItems();
                 loadStats();
-            } catch (error) {
-                console.error('Error adding item:', error);
+            } catch (e) {
+                console.error('Error adding item:', e);
                 alert('Error adding item. Please try again.');
             }
         }
@@ -182,24 +295,26 @@
                 await fetch(`/api/menu/${id}`, { method: 'DELETE' });
                 loadMenuItems();
                 loadStats();
-            } catch (error) {
-                console.error('Error deleting item:', error);
+            } catch (e) {
+                console.error('Error deleting item:', e);
                 alert('Error deleting item. Please try again.');
             }
         }
 
-        // ===== ALL ORDERS =====
+        // ============================================================
+        // ALL ORDERS
+        // ============================================================
         async function loadAllOrders() {
             try {
-                const response = await fetch('/api/orders');
-                const orders = await response.json();
+                const res = await fetch('/api/orders');
+                const orders = await res.json();
                 const container = document.getElementById('orders-container');
-                
+
                 if (orders.length === 0) {
                     container.innerHTML = '<div class="empty-state">No orders yet</div>';
                     return;
                 }
-                
+
                 container.innerHTML = orders.map(order => `
                     <div class="order-card status-${order.status}">
                         <div class="order-header">
@@ -213,6 +328,7 @@
                             <p><strong>👤 Customer:</strong> ${order.customerName}</p>
                             <p><strong>📞 Phone:</strong> ${order.phone}</p>
                             <p><strong>🪑 Table:</strong> ${order.tableNumber || 'N/A'}</p>
+                            <p><strong>💳 Payment:</strong> ${order.paymentMethod || 'cash'}</p>
                             <ul>
                                 ${order.items.map(item => `
                                     <li>${item.image || '🍽️'} ${item.name} x${item.quantity} - $${(item.price * item.quantity).toFixed(2)}</li>
@@ -226,9 +342,7 @@
                         </div>
                     </div>
                 `).join('');
-            } catch (error) {
-                console.error('Error loading orders:', error);
-            }
+            } catch (e) { console.error('Error loading orders:', e); }
         }
 
         async function deleteOrder(id) {
@@ -237,22 +351,28 @@
                 await fetch(`/api/orders/${id}`, { method: 'DELETE' });
                 loadAllOrders();
                 loadStats();
-            } catch (error) {
-                console.error('Error deleting order:', error);
+            } catch (e) {
+                console.error('Error deleting order:', e);
                 alert('Error deleting order. Please try again.');
             }
         }
 
-        // ===== AUTO-REFRESH =====
+        // ============================================================
+        // AUTO-REFRESH
+        // ============================================================
         setInterval(() => {
             loadStats();
             loadAllOrders();
+            loadAdminNotifications();
         }, 10000);
 
-        // ===== LOAD ON PAGE LOAD =====
+        // ============================================================
+        // INIT
+        // ============================================================
         loadStats();
         loadMenuItems();
         loadAllOrders();
+        loadAdminNotifications();
     </script>
 </body>
 </html>
