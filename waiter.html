@@ -5,29 +5,92 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>👨‍🍳 Waiter Dashboard - King Weliyano</title>
     <link rel="stylesheet" href="dashboard.css">
+    <style>
+        .notif-bell {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            font-size: 1.5rem;
+            margin-right: 15px;
+        }
+        .notif-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 8px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        .notif-dropdown {
+            display: none;
+            position: fixed;
+            right: 20px;
+            top: 80px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            width: 350px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            padding: 10px;
+        }
+        .notif-dropdown.show {
+            display: block;
+        }
+        .notif-item {
+            padding: 10px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        .notif-item.unread {
+            background: #fdf2f2;
+        }
+        .notif-item .time {
+            font-size: 0.7rem;
+            color: #7f8c8d;
+        }
+        @media (max-width: 768px) {
+            .notif-dropdown {
+                width: 300px;
+                right: 10px;
+                top: 120px;
+            }
+        }
+        @media (max-width: 480px) {
+            .notif-dropdown {
+                width: 280px;
+                right: 5px;
+                top: 110px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <!-- ===== LOGIN PROTECTION ===== -->
+
     <script>
+        // ============================================================
+        // AUTH CHECK
+        // ============================================================
         const token = localStorage.getItem('authToken');
-        if (!token) {
-            window.location.href = 'login.html';
-        }
+        if (!token) window.location.href = 'login.html';
 
         async function verifyAuth() {
             try {
-                const response = await fetch('/api/verify', {
+                const res = await fetch('/api/verify', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token })
                 });
-                const result = await response.json();
+                const result = await res.json();
                 if (!result.success) {
                     localStorage.removeItem('authToken');
                     localStorage.removeItem('user');
                     window.location.href = 'login.html';
                 }
-            } catch (error) {
+            } catch (e) {
                 window.location.href = 'login.html';
             }
         }
@@ -47,7 +110,6 @@
             window.location.href = 'login.html';
         }
 
-        // Check role - only waiter and admin can access
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         if (user.role !== 'waiter' && user.role !== 'admin') {
             alert('Access denied. Waiters only.');
@@ -63,12 +125,22 @@
                 <a href="waiter.html">👨‍🍳 Waiter</a>
                 <a href="chef.html">👨‍🍳 Chef</a>
                 <a href="admin.html">👑 Admin</a>
+                <span class="notif-bell" onclick="toggleWaiterNotif()">
+                    🔔
+                    <span class="notif-badge" id="waiterNotifCount">0</span>
+                </span>
                 <a href="#" onclick="logout()">🚪 Logout</a>
             </nav>
         </div>
     </header>
 
     <div class="container">
+
+        <!-- Notification Dropdown -->
+        <div class="notif-dropdown" id="waiterNotifDropdown">
+            <div id="waiterNotifList"></div>
+        </div>
+
         <div class="dashboard-header">
             <h2>📋 All Orders</h2>
             <div class="filter-buttons">
@@ -87,23 +159,67 @@
     </footer>
 
     <script>
+        // ============================================================
+        // WAITER NOTIFICATIONS
+        // ============================================================
+        let waiterNotifications = [];
+
+        async function loadWaiterNotifications() {
+            try {
+                const res = await fetch('/api/notifications?role=waiter');
+                waiterNotifications = await res.json();
+                updateWaiterNotifUI();
+            } catch (e) { console.error('Notif error:', e); }
+        }
+
+        function updateWaiterNotifUI() {
+            const unread = waiterNotifications.filter(n => !n.read).length;
+            document.getElementById('waiterNotifCount').textContent = unread;
+
+            const list = document.getElementById('waiterNotifList');
+            if (waiterNotifications.length === 0) {
+                list.innerHTML = '<p style="color:#7f8c8d;text-align:center;padding:10px;">No notifications</p>';
+                return;
+            }
+            list.innerHTML = waiterNotifications.map(n => `
+                <div class="notif-item ${n.read ? '' : 'unread'}">
+                    <p style="margin:0;font-size:0.9rem;">${n.message}</p>
+                    <span class="time">${new Date(n.timestamp).toLocaleString()}</span>
+                </div>
+            `).join('');
+        }
+
+        function toggleWaiterNotif() {
+            const dd = document.getElementById('waiterNotifDropdown');
+            dd.classList.toggle('show');
+            if (dd.classList.contains('show')) loadWaiterNotifications();
+        }
+
+        document.addEventListener('click', function(e) {
+            const dd = document.getElementById('waiterNotifDropdown');
+            const bell = document.querySelector('.notif-bell');
+            if (bell && !bell.contains(e.target) && !dd.contains(e.target)) {
+                dd.classList.remove('show');
+            }
+        });
+
+        // ============================================================
+        // ORDERS
+        // ============================================================
         let currentStatus = 'all';
 
         async function loadOrders(status = 'all') {
             currentStatus = status;
             const url = status === 'all' ? '/api/orders' : `/api/orders?status=${status}`;
             try {
-                const response = await fetch(url);
-                const orders = await response.json();
+                const res = await fetch(url);
+                const orders = await res.json();
                 displayOrders(orders);
-            } catch (error) {
-                console.error('Error loading orders:', error);
-            }
+            } catch (e) { console.error('Error loading orders:', e); }
         }
 
         function displayOrders(orders) {
             const container = document.getElementById('orders-container');
-            
             if (orders.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
@@ -127,6 +243,7 @@
                         <p><strong>👤 Customer:</strong> ${order.customerName}</p>
                         <p><strong>📞 Phone:</strong> ${order.phone}</p>
                         <p><strong>🪑 Table:</strong> ${order.tableNumber || 'N/A'}</p>
+                        <p><strong>💳 Payment:</strong> ${order.paymentMethod || 'cash'}</p>
                         <p><strong>📝 Items:</strong></p>
                         <ul>
                             ${order.items.map(item => `
@@ -155,7 +272,6 @@
                 </div>
             `).join('');
 
-            // Update active filter
             document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
             const activeBtn = document.querySelector(`.btn-filter[onclick*="${currentStatus}"]`);
             if (activeBtn) activeBtn.classList.add('active');
@@ -163,28 +279,30 @@
 
         async function updateOrder(id, status) {
             try {
-                const response = await fetch(`/api/orders/${id}`, {
+                const res = await fetch(`/api/orders/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ status })
                 });
-                const result = await response.json();
+                const result = await res.json();
                 if (result.success) {
                     loadOrders(currentStatus);
+                    loadWaiterNotifications();
                 }
-            } catch (error) {
-                console.error('Error updating order:', error);
+            } catch (e) {
+                console.error('Error updating order:', e);
                 alert('Error updating order. Please try again.');
             }
         }
 
-        // Auto-refresh every 5 seconds
+        // Auto-refresh
         setInterval(() => {
             loadOrders(currentStatus);
+            loadWaiterNotifications();
         }, 5000);
 
-        // Load orders on page load
         loadOrders('all');
+        loadWaiterNotifications();
     </script>
 </body>
 </html>
