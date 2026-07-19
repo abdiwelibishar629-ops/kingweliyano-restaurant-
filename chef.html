@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>👨‍🍳 Waiter Dashboard - King Weliyano</title>
+    <title>👨‍🍳 Chef Dashboard - King Weliyano</title>
     <link rel="stylesheet" href="dashboard.css">
     <style>
         .notif-bell {
@@ -31,40 +31,41 @@
             top: 80px;
             background: white;
             border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
             width: 350px;
             max-height: 300px;
             overflow-y: auto;
             z-index: 1000;
             padding: 10px;
         }
-        .notif-dropdown.show {
-            display: block;
+        .notif-dropdown.show { display: block; }
+        .notif-item { padding: 10px; border-bottom: 1px solid #ecf0f1; }
+        .notif-item.unread { background: #fdf2f2; }
+        .notif-item .time { font-size: 0.7rem; color: #7f8c8d; }
+        .btn-receipt {
+            background: #2c3e50;
+            color: white;
+            border: none;
+            padding: 6px 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: background 0.3s;
         }
-        .notif-item {
-            padding: 10px;
-            border-bottom: 1px solid #ecf0f1;
-        }
-        .notif-item.unread {
-            background: #fdf2f2;
-        }
-        .notif-item .time {
+        .btn-receipt:hover { background: #1a252f; }
+        .waiter-badge {
+            background: #27ae60;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 20px;
             font-size: 0.7rem;
-            color: #7f8c8d;
+            font-weight: bold;
         }
         @media (max-width: 768px) {
-            .notif-dropdown {
-                width: 300px;
-                right: 10px;
-                top: 120px;
-            }
+            .notif-dropdown { width: 300px; right: 10px; top: 120px; }
         }
         @media (max-width: 480px) {
-            .notif-dropdown {
-                width: 280px;
-                right: 5px;
-                top: 110px;
-            }
+            .notif-dropdown { width: 280px; right: 5px; top: 110px; }
         }
     </style>
 </head>
@@ -111,23 +112,109 @@
         }
 
         const user = JSON.parse(localStorage.getItem('user') || '{}');
-        if (user.role !== 'waiter' && user.role !== 'admin') {
-            alert('Access denied. Waiters only.');
+        if (user.role !== 'chef' && user.role !== 'admin') {
+            alert('Access denied. Chefs only.');
             window.location.href = 'login.html';
+        }
+
+        // ============================================================
+        // PRINT RECEIPT WITH WAITER NAME
+        // ============================================================
+        async function printReceipt(orderId) {
+            try {
+                const res = await fetch(`/api/orders/${orderId}`);
+                const order = await res.json();
+
+                if (!order) {
+                    alert('Order not found!');
+                    return;
+                }
+
+                const receiptHTML = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Receipt #${order.id}</title>
+                        <style>
+                            body { font-family: 'Courier New', monospace; padding: 20px; max-width: 400px; margin: 0 auto; background: white; }
+                            .receipt { border: 2px dashed #333; padding: 20px; }
+                            .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 10px; }
+                            .header h1 { margin: 0; font-size: 1.5rem; color: #c0392b; }
+                            .header p { margin: 5px 0; font-size: 0.9rem; color: #555; }
+                            .order-info { margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 5px; }
+                            .items { width: 100%; margin: 10px 0; }
+                            .items th { text-align: left; border-bottom: 1px solid #ddd; padding: 5px 0; }
+                            .items td { padding: 5px 0; border-bottom: 1px solid #eee; }
+                            .total { font-size: 1.2rem; font-weight: bold; text-align: right; border-top: 2px solid #333; padding-top: 10px; margin-top: 10px; }
+                            .payment { text-align: center; margin: 10px 0; padding: 5px; background: #e8f8f0; border-radius: 5px; }
+                            .served-by { text-align: center; margin: 10px 0; padding: 8px; background: #d4edda; border-radius: 5px; font-weight: bold; font-size: 1rem; border: 1px solid #27ae60; }
+                            .served-by .waiter-icon { font-size: 1.2rem; }
+                            .footer { text-align: center; margin-top: 20px; padding-top: 10px; border-top: 2px dashed #333; font-size: 0.8rem; color: #777; }
+                            .thank-you { text-align: center; font-size: 1.2rem; font-weight: bold; color: #27ae60; margin: 10px 0; }
+                            @media print { body { padding: 0; } .receipt { border: none; } .no-print { display: none; } }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="receipt">
+                            <div class="header">
+                                <h1>🍽️ King Weliyano</h1>
+                                <p>Restaurant</p>
+                                <p>📍 Nairobi, Kenya</p>
+                                <p>📞 +254 700 000 000</p>
+                            </div>
+                            <div class="order-info">
+                                <p><strong>Order #:</strong> ${order.id}</p>
+                                <p><strong>Date:</strong> ${new Date(order.timestamp).toLocaleString()}</p>
+                                <p><strong>Table:</strong> ${order.tableNumber || 'N/A'}</p>
+                                <p><strong>Customer:</strong> ${order.customerName}</p>
+                                <p><strong>Phone:</strong> ${order.phone}</p>
+                            </div>
+                            <table class="items">
+                                <tr><th>Item</th><th>Qty</th><th style="text-align:right;">Price</th></tr>
+                                ${order.items.map(item => `
+                                    <tr><td>${item.image || '🍽️'} ${item.name}</td><td>${item.quantity}</td><td style="text-align:right;">$${(item.price * item.quantity).toFixed(2)}</td></tr>
+                                `).join('')}
+                            </table>
+                            <div class="total">Total: $${order.total.toFixed(2)}</div>
+                            <div class="payment">💳 Payment: <strong>${order.paymentMethod || 'cash'}</strong></div>
+                            <div class="served-by">
+                                <span class="waiter-icon">👨‍🍳</span> Served by: <strong>${order.servedBy || 'Not yet served'}</strong>
+                                ${order.servedAt ? ` at ${new Date(order.servedAt).toLocaleString()}` : ''}
+                            </div>
+                            ${order.specialInstructions ? `<div style="margin:10px 0;padding:10px;background:#fff3cd;border-radius:5px;"><strong>📌 Special Instructions:</strong><p style="margin:5px 0;">${order.specialInstructions}</p></div>` : ''}
+                            <div class="thank-you">🙏 Thank You!</div>
+                            <div class="footer"><p>🎉 Enjoy your meal!</p><p>Please come again!</p></div>
+                        </div>
+                        <div style="text-align:center;margin-top:20px;" class="no-print">
+                            <button onclick="window.print()" style="background:#c0392b;color:white;border:none;padding:12px 30px;border-radius:25px;cursor:pointer;font-size:1rem;">🖨️ Print</button>
+                            <button onclick="window.close()" style="background:#7f8c8d;color:white;border:none;padding:12px 30px;border-radius:25px;cursor:pointer;font-size:1rem;margin-left:10px;">✕ Close</button>
+                        </div>
+                    </body>
+                    </html>
+                `;
+
+                const receiptWindow = window.open('', '_blank', 'width=450,height=600');
+                receiptWindow.document.write(receiptHTML);
+                receiptWindow.document.close();
+
+            } catch (error) {
+                console.error('Error generating receipt:', error);
+                alert('Error generating receipt. Please try again.');
+            }
         }
     </script>
 
     <header>
         <div class="header-content">
-            <h1>👨‍🍳 King Weliyano - Waiter Dashboard</h1>
+            <h1>👨‍🍳 King Weliyano - Chef Dashboard</h1>
             <nav>
                 <a href="index.html">🏠 Home</a>
                 <a href="waiter.html">👨‍🍳 Waiter</a>
                 <a href="chef.html">👨‍🍳 Chef</a>
                 <a href="admin.html">👑 Admin</a>
-                <span class="notif-bell" onclick="toggleWaiterNotif()">
+                <span class="notif-bell" onclick="toggleChefNotif()">
                     🔔
-                    <span class="notif-badge" id="waiterNotifCount">0</span>
+                    <span class="notif-badge" id="chefNotifCount">0</span>
                 </span>
                 <a href="#" onclick="logout()">🚪 Logout</a>
             </nav>
@@ -137,18 +224,17 @@
     <div class="container">
 
         <!-- Notification Dropdown -->
-        <div class="notif-dropdown" id="waiterNotifDropdown">
-            <div id="waiterNotifList"></div>
+        <div class="notif-dropdown" id="chefNotifDropdown">
+            <div id="chefNotifList"></div>
         </div>
 
         <div class="dashboard-header">
-            <h2>📋 All Orders</h2>
+            <h2>🔪 Kitchen Orders</h2>
             <div class="filter-buttons">
-                <button onclick="loadOrders('all')" class="btn-filter active">📋 All</button>
-                <button onclick="loadOrders('pending')" class="btn-filter">⏳ Pending</button>
+                <button onclick="loadOrders('pending')" class="btn-filter active">⏳ Pending</button>
                 <button onclick="loadOrders('preparing')" class="btn-filter">🔪 Preparing</button>
                 <button onclick="loadOrders('ready')" class="btn-filter">✅ Ready</button>
-                <button onclick="loadOrders('served')" class="btn-filter">🍽️ Served</button>
+                <button onclick="loadOrders('all')" class="btn-filter">📋 All</button>
             </div>
         </div>
         <div id="orders-container"></div>
@@ -160,28 +246,28 @@
 
     <script>
         // ============================================================
-        // WAITER NOTIFICATIONS
+        // CHEF NOTIFICATIONS
         // ============================================================
-        let waiterNotifications = [];
+        let chefNotifications = [];
 
-        async function loadWaiterNotifications() {
+        async function loadChefNotifications() {
             try {
-                const res = await fetch('/api/notifications?role=waiter');
-                waiterNotifications = await res.json();
-                updateWaiterNotifUI();
+                const res = await fetch('/api/notifications?role=chef');
+                chefNotifications = await res.json();
+                updateChefNotifUI();
             } catch (e) { console.error('Notif error:', e); }
         }
 
-        function updateWaiterNotifUI() {
-            const unread = waiterNotifications.filter(n => !n.read).length;
-            document.getElementById('waiterNotifCount').textContent = unread;
+        function updateChefNotifUI() {
+            const unread = chefNotifications.filter(n => !n.read).length;
+            document.getElementById('chefNotifCount').textContent = unread;
 
-            const list = document.getElementById('waiterNotifList');
-            if (waiterNotifications.length === 0) {
+            const list = document.getElementById('chefNotifList');
+            if (chefNotifications.length === 0) {
                 list.innerHTML = '<p style="color:#7f8c8d;text-align:center;padding:10px;">No notifications</p>';
                 return;
             }
-            list.innerHTML = waiterNotifications.map(n => `
+            list.innerHTML = chefNotifications.map(n => `
                 <div class="notif-item ${n.read ? '' : 'unread'}">
                     <p style="margin:0;font-size:0.9rem;">${n.message}</p>
                     <span class="time">${new Date(n.timestamp).toLocaleString()}</span>
@@ -189,14 +275,14 @@
             `).join('');
         }
 
-        function toggleWaiterNotif() {
-            const dd = document.getElementById('waiterNotifDropdown');
+        function toggleChefNotif() {
+            const dd = document.getElementById('chefNotifDropdown');
             dd.classList.toggle('show');
-            if (dd.classList.contains('show')) loadWaiterNotifications();
+            if (dd.classList.contains('show')) loadChefNotifications();
         }
 
         document.addEventListener('click', function(e) {
-            const dd = document.getElementById('waiterNotifDropdown');
+            const dd = document.getElementById('chefNotifDropdown');
             const bell = document.querySelector('.notif-bell');
             if (bell && !bell.contains(e.target) && !dd.contains(e.target)) {
                 dd.classList.remove('show');
@@ -206,25 +292,25 @@
         // ============================================================
         // ORDERS
         // ============================================================
-        let currentStatus = 'all';
+        let currentStatus = 'pending';
 
-        async function loadOrders(status = 'all') {
+        async function loadOrders(status = 'pending') {
             currentStatus = status;
             const url = status === 'all' ? '/api/orders' : `/api/orders?status=${status}`;
             try {
                 const res = await fetch(url);
                 const orders = await res.json();
-                displayOrders(orders);
+                displayOrders(orders, status);
             } catch (e) { console.error('Error loading orders:', e); }
         }
 
-        function displayOrders(orders) {
+        function displayOrders(orders, currentStatus) {
             const container = document.getElementById('orders-container');
             if (orders.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
-                        <h2>📭 No orders found</h2>
-                        <p>Orders will appear here when customers place them.</p>
+                        <h2>🍽️ No ${currentStatus} orders</h2>
+                        <p>Waiting for new orders from customers...</p>
                     </div>
                 `;
                 return;
@@ -236,6 +322,7 @@
                         <div>
                             <strong>Order #${order.id}</strong>
                             <span class="status-badge ${order.status}">${order.status}</span>
+                            ${order.servedBy ? `<span class="waiter-badge">👨‍🍳 ${order.servedBy}</span>` : ''}
                         </div>
                         <span>${new Date(order.timestamp).toLocaleString()}</span>
                     </div>
@@ -244,6 +331,7 @@
                         <p><strong>📞 Phone:</strong> ${order.phone}</p>
                         <p><strong>🪑 Table:</strong> ${order.tableNumber || 'N/A'}</p>
                         <p><strong>💳 Payment:</strong> ${order.paymentMethod || 'cash'}</p>
+                        ${order.servedBy ? `<p><strong>👨‍🍳 Served by:</strong> ${order.servedBy}</p>` : ''}
                         <p><strong>📝 Items:</strong></p>
                         <ul>
                             ${order.items.map(item => `
@@ -254,20 +342,23 @@
                         <p class="order-total"><strong>Total: $${order.total.toFixed(2)}</strong></p>
                     </div>
                     <div class="order-actions">
-                        ${order.status === 'ready' ? `
-                            <button onclick="updateOrder(${order.id}, 'served')" class="btn-served">
-                                🍽️ Mark as Served
+                        ${order.status === 'pending' ? `
+                            <button onclick="updateOrder(${order.id}, 'preparing')" class="btn-prepare">
+                                🔪 Start Cooking
                             </button>
                         ` : ''}
-                        ${order.status === 'pending' ? `
-                            <span style="color:#f39c12;font-weight:bold;">⏳ Waiting for chef</span>
-                        ` : ''}
                         ${order.status === 'preparing' ? `
-                            <span style="color:#3498db;font-weight:bold;">🔪 Chef is cooking</span>
+                            <button onclick="updateOrder(${order.id}, 'ready')" class="btn-ready">
+                                ✅ Done Cooking
+                            </button>
+                        ` : ''}
+                        ${order.status === 'ready' ? `
+                            <span style="color:#27ae60;font-weight:bold;">✅ Ready for waiter</span>
                         ` : ''}
                         ${order.status === 'served' ? `
-                            <span style="color:#9b59b6;font-weight:bold;">✅ Served to customer</span>
+                            <span style="color:#9b59b6;font-weight:bold;">🍽️ Served by ${order.servedBy || 'Waiter'}</span>
                         ` : ''}
+                        <button onclick="printReceipt(${order.id})" class="btn-receipt">🧾 Receipt</button>
                     </div>
                 </div>
             `).join('');
@@ -287,7 +378,7 @@
                 const result = await res.json();
                 if (result.success) {
                     loadOrders(currentStatus);
-                    loadWaiterNotifications();
+                    loadChefNotifications();
                 }
             } catch (e) {
                 console.error('Error updating order:', e);
@@ -295,14 +386,16 @@
             }
         }
 
-        // Auto-refresh
+        // ============================================================
+        // AUTO-REFRESH
+        // ============================================================
         setInterval(() => {
             loadOrders(currentStatus);
-            loadWaiterNotifications();
+            loadChefNotifications();
         }, 5000);
 
-        loadOrders('all');
-        loadWaiterNotifications();
+        loadOrders('pending');
+        loadChefNotifications();
     </script>
 </body>
 </html>
