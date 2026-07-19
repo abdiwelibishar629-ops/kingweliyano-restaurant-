@@ -1,3 +1,8 @@
+/* ============================================================
+   DASHBOARD CSS - KING WELIYANO RESTAURANT
+   Complete Styling for Admin, Waiter, and Chef Dashboards
+   ============================================================ */
+
 * {
     margin: 0;
     padding: 0;
@@ -10,11 +15,17 @@ body {
     color: #2c3e50;
 }
 
+/* ============================================================
+   HEADER
+   ============================================================ */
 header {
     background: #2c3e50;
     color: white;
     padding: 15px 0;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    position: sticky;
+    top: 0;
+    z-index: 999;
 }
 
 .header-content {
@@ -30,6 +41,7 @@ header {
 
 header h1 {
     font-size: 1.5rem;
+    font-weight: 700;
 }
 
 nav {
@@ -45,18 +57,87 @@ nav a {
     padding: 8px 16px;
     border-radius: 5px;
     transition: background 0.3s;
+    font-size: 0.95rem;
 }
 
 nav a:hover {
     background: rgba(255, 255, 255, 0.2);
 }
 
+/* Notification Bell in Header */
+.notif-bell {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+    font-size: 1.5rem;
+    margin: 0 10px;
+}
+
+.notif-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #e74c3c;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 8px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    min-width: 20px;
+    text-align: center;
+}
+
+/* Notification Dropdown */
+.notif-dropdown {
+    display: none;
+    position: fixed;
+    right: 20px;
+    top: 80px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    width: 350px;
+    max-height: 350px;
+    overflow-y: auto;
+    z-index: 1000;
+    padding: 10px;
+}
+
+.notif-dropdown.show {
+    display: block;
+}
+
+.notif-item {
+    padding: 10px 12px;
+    border-bottom: 1px solid #ecf0f1;
+    border-radius: 5px;
+    margin-bottom: 5px;
+}
+
+.notif-item.unread {
+    background: #fdf2f2;
+    border-left: 3px solid #e74c3c;
+}
+
+.notif-item .time {
+    font-size: 0.7rem;
+    color: #7f8c8d;
+    display: block;
+    margin-top: 3px;
+}
+
+/* ============================================================
+   CONTAINER
+   ============================================================ */
 .container {
     max-width: 1400px;
     margin: 0 auto;
     padding: 20px;
 }
 
+/* ============================================================
+   DASHBOARD HEADER
+   ============================================================ */
 .dashboard-header {
     display: flex;
     justify-content: space-between;
@@ -85,10 +166,12 @@ nav a:hover {
     cursor: pointer;
     transition: all 0.3s;
     font-weight: 500;
+    font-size: 0.9rem;
 }
 
 .btn-filter:hover {
     background: #ecf0f1;
+    border-color: #95a5a6;
 }
 
 .btn-filter.active {
@@ -97,25 +180,33 @@ nav a:hover {
     border-color: #2c3e50;
 }
 
+/* ============================================================
+   ORDERS CONTAINER
+   ============================================================ */
 #orders-container {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
     gap: 20px;
 }
 
+/* ============================================================
+   ORDER CARD
+   ============================================================ */
 .order-card {
     background: white;
     border-radius: 12px;
     padding: 20px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
     border-left: 5px solid #bdc3c7;
-    transition: transform 0.2s;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .order-card:hover {
     transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
 }
 
+/* Status border colors */
 .order-card.status-pending {
     border-left-color: #f39c12;
 }
@@ -130,6 +221,10 @@ nav a:hover {
 
 .order-card.status-served {
     border-left-color: #9b59b6;
+}
+
+.order-card.status-completed {
+    border-left-color: #27ae60;
 }
 
 .order-header {
@@ -176,6 +271,11 @@ nav a:hover {
     color: white;
 }
 
+.status-badge.completed {
+    background: #27ae60;
+    color: white;
+}
+
 .order-body p {
     margin: 5px 0;
     font-size: 0.95rem;
@@ -197,6 +297,7 @@ nav a:hover {
     color: #c0392b;
     margin-top: 8px;
     text-align: right;
+    font-weight: bold;
 }
 
 .order-actions {
@@ -213,6 +314,7 @@ nav a:hover {
     cursor: pointer;
     font-weight: 500;
     transition: all 0.3s;
+    font-size: 0.9rem;
 }
 
 .btn-served {
@@ -251,6 +353,21 @@ nav a:hover {
     background: #c0392b;
 }
 
+.btn-receipt {
+    background: #2c3e50;
+    color: white;
+    border: none;
+    padding: 6px 15px;
+    border-radius: 15px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: background 0.3s;
+}
+
+.btn-receipt:hover {
+    background: #1a252f;
+}
+
 .empty-state {
     text-align: center;
     padding: 60px 20px;
@@ -259,6 +376,14 @@ nav a:hover {
     grid-column: 1 / -1;
 }
 
+.empty-state h2 {
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+/* ============================================================
+   STATS GRID
+   ============================================================ */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -272,6 +397,11 @@ nav a:hover {
     padding: 20px;
     text-align: center;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
 }
 
 .stat-card .number {
@@ -290,6 +420,9 @@ nav a:hover {
     color: #27ae60;
 }
 
+/* ============================================================
+   MENU MANAGEMENT
+   ============================================================ */
 .menu-management {
     background: white;
     border-radius: 12px;
@@ -300,6 +433,7 @@ nav a:hover {
 
 .menu-management h3 {
     margin-bottom: 20px;
+    color: #2c3e50;
 }
 
 .form-row {
@@ -309,11 +443,19 @@ nav a:hover {
     margin-bottom: 15px;
 }
 
-.form-row input {
+.form-row input,
+.form-row select {
     padding: 10px 15px;
     border: 1px solid #ddd;
     border-radius: 8px;
     font-size: 1rem;
+    transition: border-color 0.3s;
+}
+
+.form-row input:focus,
+.form-row select:focus {
+    border-color: #2c3e50;
+    outline: none;
 }
 
 .btn-add-item {
@@ -324,6 +466,7 @@ nav a:hover {
     border-radius: 25px;
     cursor: pointer;
     font-weight: 500;
+    transition: background 0.3s;
 }
 
 .btn-add-item:hover {
@@ -344,6 +487,11 @@ nav a:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    transition: transform 0.2s;
+}
+
+.menu-item-card:hover {
+    transform: translateY(-2px);
 }
 
 .menu-item-card .item-info {
@@ -353,10 +501,12 @@ nav a:hover {
 
 .menu-item-card .item-name {
     font-weight: 600;
+    font-size: 1rem;
 }
 
 .menu-item-card .item-price {
     color: #c0392b;
+    font-size: 0.9rem;
 }
 
 .btn-delete-item {
@@ -366,40 +516,226 @@ nav a:hover {
     padding: 5px 15px;
     border-radius: 20px;
     cursor: pointer;
+    font-size: 0.8rem;
+    transition: background 0.3s;
 }
 
 .btn-delete-item:hover {
     background: #c0392b;
 }
 
+/* ============================================================
+   WAITER MANAGEMENT - ADMIN ONLY
+   ============================================================ */
+.waiter-management {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    margin-top: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.waiter-management h3 {
+    margin-bottom: 20px;
+    color: #2c3e50;
+}
+
+.waiter-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.waiter-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: transform 0.2s;
+}
+
+.waiter-card:hover {
+    transform: translateY(-2px);
+}
+
+.waiter-card .waiter-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.waiter-card .waiter-name {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.waiter-card .waiter-role {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+}
+
+.waiter-card .waiter-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-reset-password {
+    background: #f39c12;
+    color: white;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 15px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: background 0.3s;
+}
+
+.btn-reset-password:hover {
+    background: #d68910;
+}
+
+.btn-delete-waiter {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 15px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: background 0.3s;
+}
+
+.btn-delete-waiter:hover {
+    background: #c0392b;
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
 footer {
     background: #2c3e50;
     color: white;
     text-align: center;
     padding: 20px;
     margin-top: 40px;
+    font-size: 0.9rem;
 }
 
+/* ============================================================
+   RESPONSIVE DESIGN
+   ============================================================ */
+
+/* Tablets */
+@media (max-width: 992px) {
+    #orders-container {
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Mobile */
 @media (max-width: 768px) {
     .header-content {
         flex-direction: column;
         align-items: center;
         text-align: center;
     }
+    
+    nav {
+        justify-content: center;
+    }
+    
     #orders-container {
         grid-template-columns: 1fr;
     }
+    
     .dashboard-header {
         flex-direction: column;
         align-items: stretch;
     }
+    
     .filter-buttons {
         justify-content: center;
     }
+    
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
     }
+    
     .form-row {
         grid-template-columns: 1fr;
+    }
+    
+    .notif-dropdown {
+        width: 300px;
+        right: 10px;
+        top: 120px;
+    }
+    
+    .waiter-list {
+        grid-template-columns: 1fr;
+    }
+    
+    .menu-items-list {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Small Mobile */
+@media (max-width: 480px) {
+    header h1 {
+        font-size: 1.2rem;
+    }
+    
+    nav a {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+    
+    .container {
+        padding: 10px;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    
+    .stat-card .number {
+        font-size: 1.8rem;
+    }
+    
+    .notif-dropdown {
+        width: 280px;
+        right: 5px;
+        top: 110px;
+    }
+    
+    .order-card {
+        padding: 15px;
+    }
+    
+    .dashboard-header h2 {
+        font-size: 1.3rem;
+    }
+    
+    .filter-buttons .btn-filter {
+        padding: 6px 14px;
+        font-size: 0.75rem;
+    }
+    
+    .waiter-card {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+    
+    .waiter-card .waiter-actions {
+        justify-content: center;
     }
 }
