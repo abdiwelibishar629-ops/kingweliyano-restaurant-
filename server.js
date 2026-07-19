@@ -150,7 +150,7 @@ app.post('/api/order', (req, res) => {
         'info'
     );
 
-    // 🔔 Customer notification (they'll see it on reload)
+    // 🔔 Customer notification
     addNotification(
         'customer',
         `✅ Order #${order.id} placed successfully! Chef is preparing it.`,
@@ -169,6 +169,16 @@ app.get('/api/orders', (req, res) => {
     const { status } = req.query;
     let result = status ? orders.filter(o => o.status === status) : orders;
     res.json(result);
+});
+
+app.get('/api/orders/:id', (req, res) => {
+    const id = parseInt(req.params.id);
+    const order = orders.find(o => o.id === id);
+    if (order) {
+        res.json(order);
+    } else {
+        res.status(404).json({ error: 'Order not found' });
+    }
 });
 
 app.put('/api/orders/:id', (req, res) => {
