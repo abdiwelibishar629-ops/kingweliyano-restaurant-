@@ -10,11 +10,21 @@ app.use(express.static('.'));
 // ============================================================
 // DATA
 // ============================================================
-const users = [
-    { username: 'admin', password: 'admin123', role: 'admin' },
-    { username: 'waiter', password: 'waiter123', role: 'waiter' },
-    { username: 'chef', password: 'chef123', role: 'chef' }
+// Default users - only admin can add more waiters
+const defaultUsers = [
+    { id: 1, username: 'admin', password: 'admin123', role: 'admin' },
+    { id: 2, username: 'waiter', password: 'waiter123', role: 'waiter' },
+    { id: 3, username: 'chef', password: 'chef123', role: 'chef' }
 ];
+
+let users = [];
+let userId = 4;
+
+// Initialize users from default
+function initUsers() {
+    users = JSON.parse(JSON.stringify(defaultUsers));
+}
+initUsers();
 
 const menu = [
     { id: 1, name: 'Beef Burger', price: 12.99, category: 'Burgers', image: '🍔' },
@@ -33,6 +43,19 @@ let sessions = {};
 let notifications = [];
 
 // ============================================================
+// MIDDLEWARE - Check if user is admin
+// ============================================================
+function isAdmin(token) {
+    if (!token || !sessions[token]) return false;
+    return sessions[token].role === 'admin';
+}
+
+function isWaiterOrAdmin(token) {
+    if (!token || !sessions[token]) return false;
+    return sessions[token].role === 'waiter' || sessions[token].role === 'admin';
+}
+
+// ============================================================
 // NOTIFICATION HELPERS
 // ============================================================
 function addNotification(role, message, orderId, type = 'info') {
@@ -49,15 +72,6 @@ function addNotification(role, message, orderId, type = 'info') {
     return notif;
 }
 
-function getNotifications(role) {
-    return notifications.filter(n => n.role === role || n.role === 'all');
-}
-
-function markAsRead(id) {
-    const n = notifications.find(n => n.id === id);
-    if (n) n.read = true;
-}
-
 // ============================================================
 // AUTH
 // ============================================================
@@ -66,8 +80,12 @@ app.post('/api/login', (req, res) => {
     const user = users.find(u => u.username === username && u.password === password);
     if (user) {
         const token = Math.random().toString(36).substring(2) + Date.now().toString(36);
-        sessions[token] = { username: user.username, role: user.role };
-        res.json({ success: true, token, user: { username: user.username, role: user.role } });
+        sessions[token] = { userId: user.id, username: user.username, role: user.role };
+        res.json({ 
+            success: true, 
+            token, 
+            user: { id: user.id, username: user.username, role: user.role } 
+        });
     } else {
         res.status(401).json({ success: false, error: 'Invalid credentials' });
     }
@@ -86,6 +104,104 @@ app.post('/api/verify', (req, res) => {
     } else {
         res.status(401).json({ success: false });
     }
+});
+
+// ============================================================
+// WAITER MANAGEMENT - ADMIN ONLY
+// ============================================================
+
+// Get all users (admin only)
+app.get('/api/users', (req, res) => {
+    const token = req.headers.authorization;
+    if (!isAdmin(token)) {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
+    // Return users without passwords
+    const safeUsers = users.map(u => ({
+        id: u.id,
+        username: u.username,
+        role: u.role
+    }));
+    res.json(safeUsers);
+});
+
+// Add new waiter (admin only)
+app.post('/api/users', (req, res) => {
+    const token = req.headers.authorization;
+    if (!isAdmin(token)) {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const { username, password } = req.body;
+    if (!username || !password) {
+        return res.status(400).json({ error: 'Username and password required' });
+    }
+
+    // Check if username already exists
+    if (users.find(u => u.username === username)) {
+        return res.status(400).json({ error: 'Username already exists' });
+    }
+
+    const newUser = {
+        id: userId++,
+        username: username,
+        password: password,
+        role: 'waiter'
+    };
+    users.push(newUser);
+
+    res.json({ 
+        success: true, 
+        user: { id: newUser.id, username: newUser.username, role: newUser.role } 
+    });
+});
+
+// Delete waiter (admin only)
+app.delete('/api/users/:id', (req, res) => {
+    const token = req.headers.authorization;
+    if (!isAdmin(token)) {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const id = parseInt(req.params.id);
+    
+    // Prevent deleting admin or chef
+    const user = users.find(u => u.id === id);
+    if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+    if (user.role === 'admin' || user.role === 'chef') {
+        return res.status(403).json({ error: 'Cannot delete admin or chef' });
+    }
+
+    users = users.filter(u => u.id !== id);
+    res.json({ success: true });
+});
+
+// Reset waiter password (admin only)
+app.put('/api/users/:id/reset-password', (req, res) => {
+    const token = req.headers.authorization;
+    if (!isAdmin(token)) {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const id = parseInt(req.params.id);
+    const { newPassword } = req.body;
+    
+    if (!newPassword || newPassword.length < 4) {
+        return res.status(400).json({ error: 'Password must be at least 4 characters' });
+    }
+
+    const user = users.find(u => u.id === id);
+    if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+    if (user.role === 'admin') {
+        return res.status(403).json({ error: 'Cannot reset admin password here' });
+    }
+
+    user.password = newPassword;
+    res.json({ success: true, message: 'Password reset successfully' });
 });
 
 // ============================================================
@@ -137,32 +253,17 @@ app.post('/api/order', (req, res) => {
         timestamp: new Date().toISOString(),
         tableNumber: tableNumber || '1',
         paymentMethod: paymentMethod || 'cash',
-        paymentDetails: paymentDetails || {}
+        paymentDetails: paymentDetails || {},
+        servedBy: null,
+        servedAt: null
     };
 
     orders.push(order);
 
-    // 🔔 Chef notification
-    addNotification(
-        'chef',
-        `🔔 New Order #${order.id} from ${customerName}! (${paymentMethod})`,
-        order.id,
-        'info'
-    );
+    addNotification('chef', `🔔 New Order #${order.id} from ${customerName}! (${paymentMethod})`, order.id, 'info');
+    addNotification('customer', `✅ Order #${order.id} placed successfully!`, order.id, 'success');
 
-    // 🔔 Customer notification
-    addNotification(
-        'customer',
-        `✅ Order #${order.id} placed successfully! Chef is preparing it.`,
-        order.id,
-        'success'
-    );
-
-    res.json({
-        success: true,
-        orderId: order.id,
-        message: 'Order placed! Chef has been notified.'
-    });
+    res.json({ success: true, orderId: order.id });
 });
 
 app.get('/api/orders', (req, res) => {
@@ -191,56 +292,25 @@ app.put('/api/orders/:id', (req, res) => {
     const oldStatus = order.status;
     order.status = req.body.status || order.status;
 
-    // ===== NOTIFICATIONS BASED ON STATUS CHANGE =====
+    if (order.status === 'served' && oldStatus === 'ready') {
+        order.servedBy = req.body.waiterName || 'Waiter';
+        order.servedAt = new Date().toISOString();
+    }
+
     if (order.status === 'preparing' && oldStatus === 'pending') {
-        addNotification(
-            'customer',
-            `👨‍🍳 Chef is cooking your order #${order.id}!`,
-            order.id,
-            'info'
-        );
-        addNotification(
-            'all',
-            `🔪 Chef started cooking Order #${order.id}`,
-            order.id,
-            'info'
-        );
+        addNotification('customer', `👨‍🍳 Chef is cooking your order #${order.id}!`, order.id, 'info');
+        addNotification('all', `🔪 Chef started cooking Order #${order.id}`, order.id, 'info');
     }
 
     if (order.status === 'ready' && oldStatus === 'preparing') {
-        addNotification(
-            'waiter',
-            `✅ Order #${order.id} is READY to serve!`,
-            order.id,
-            'success'
-        );
-        addNotification(
-            'customer',
-            `✅ Your order #${order.id} is ready for pickup!`,
-            order.id,
-            'success'
-        );
-        addNotification(
-            'all',
-            `🍽️ Order #${order.id} is ready for service`,
-            order.id,
-            'success'
-        );
+        addNotification('waiter', `✅ Order #${order.id} is READY to serve!`, order.id, 'success');
+        addNotification('customer', `✅ Your order #${order.id} is ready for pickup!`, order.id, 'success');
+        addNotification('all', `🍽️ Order #${order.id} is ready for service`, order.id, 'success');
     }
 
     if (order.status === 'served' && oldStatus === 'ready') {
-        addNotification(
-            'chef',
-            `🍽️ Order #${order.id} has been served to customer`,
-            order.id,
-            'success'
-        );
-        addNotification(
-            'customer',
-            `🍽️ Your order #${order.id} has been served! Enjoy your meal!`,
-            order.id,
-            'success'
-        );
+        addNotification('chef', `🍽️ Order #${order.id} has been served by ${order.servedBy || 'Waiter'}`, order.id, 'success');
+        addNotification('customer', `🍽️ Your order #${order.id} has been served! Enjoy your meal!`, order.id, 'success');
     }
 
     res.json({ success: true, order });
@@ -266,7 +336,8 @@ app.get('/api/notifications', (req, res) => {
 });
 
 app.put('/api/notifications/:id/read', (req, res) => {
-    markAsRead(parseInt(req.params.id));
+    const n = notifications.find(n => n.id === parseInt(req.params.id));
+    if (n) n.read = true;
     res.json({ success: true });
 });
 
@@ -289,6 +360,8 @@ app.get('/api/stats', (req, res) => {
 // ============================================================
 app.listen(PORT, () => {
     console.log(`🍽️ Server running on port ${PORT}`);
-    console.log(`👥 Users: admin, waiter, chef`);
-    console.log(`🔔 Notification system active!`);
+    console.log(`👥 Admin: admin / admin123`);
+    console.log(`👨‍🍳 Waiter: waiter / waiter123`);
+    console.log(`👨‍🍳 Chef: chef / chef123`);
+    console.log(`🔒 Only Admin can add/manage waiters`);
 });
