@@ -5,9 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - King Weliyano</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #fdf6ec;
             display: flex;
             justify-content: center;
@@ -18,13 +22,24 @@
             background: white;
             padding: 40px;
             border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             width: 100%;
             max-width: 400px;
         }
-        .logo { text-align: center; font-size: 4rem; }
-        h1 { text-align: center; color: #c0392b; margin: 10px 0; }
-        .subtitle { text-align: center; color: #7f8c8d; margin-bottom: 20px; }
+        .logo {
+            text-align: center;
+            font-size: 4rem;
+        }
+        h1 {
+            text-align: center;
+            color: #c0392b;
+            margin: 10px 0;
+        }
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
         input {
             width: 100%;
             padding: 12px;
@@ -33,7 +48,10 @@
             border-radius: 8px;
             font-size: 1rem;
         }
-        input:focus { border-color: #c0392b; outline: none; }
+        input:focus {
+            border-color: #c0392b;
+            outline: none;
+        }
         button {
             width: 100%;
             padding: 14px;
@@ -44,7 +62,9 @@
             font-size: 1.1rem;
             cursor: pointer;
         }
-        button:hover { background: #e74c3c; }
+        button:hover {
+            background: #e74c3c;
+        }
         .error {
             background: #fde8e8;
             color: #c0392b;
@@ -60,7 +80,9 @@
             margin: 15px 0;
             font-size: 0.85rem;
         }
-        .demo-credentials p { margin: 3px 0; }
+        .demo-credentials p {
+            margin: 3px 0;
+        }
         .role-badge {
             display: inline-block;
             padding: 2px 10px;
@@ -68,12 +90,46 @@
             font-size: 0.7rem;
             font-weight: 600;
         }
-        .role-badge.admin { background: #c0392b; color: white; }
-        .role-badge.waiter { background: #3498db; color: white; }
-        .role-badge.chef { background: #e67e22; color: white; }
-        .links { text-align: center; margin-top: 20px; }
-        .links a { color: #c0392b; text-decoration: none; margin: 0 10px; }
-        .links a:hover { text-decoration: underline; }
+        .role-badge.admin {
+            background: #c0392b;
+            color: white;
+        }
+        .role-badge.waiter {
+            background: #3498db;
+            color: white;
+        }
+        .role-badge.chef {
+            background: #e67e22;
+            color: white;
+        }
+        .links {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .links a {
+            color: #c0392b;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        .links a:hover {
+            text-decoration: underline;
+        }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid white;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.6s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
 <body>
@@ -81,46 +137,43 @@
         <div class="logo">🍽️</div>
         <h1>King Weliyano</h1>
         <p class="subtitle">Staff Login</p>
-        
+
         <div id="error-message" class="error"></div>
-        
+
         <input type="text" id="username" placeholder="Username">
         <input type="password" id="password" placeholder="Password">
-        <button onclick="login()">🔐 Login</button>
-        
+        <button id="loginBtn" onclick="login()">🔐 Login</button>
+
         <div class="demo-credentials">
             <p style="font-weight:600;margin-bottom:5px;">📋 Demo Credentials:</p>
             <p><strong>Admin:</strong> admin / admin123 <span class="role-badge admin">Admin</span></p>
             <p><strong>Waiter:</strong> waiter / waiter123 <span class="role-badge waiter">Waiter</span></p>
             <p><strong>Chef:</strong> chef / chef123 <span class="role-badge chef">Chef</span></p>
         </div>
-        
+
         <div class="links">
             <a href="index.html">🏠 Home</a>
         </div>
     </div>
 
     <script>
-        // Check if already logged in
         const token = localStorage.getItem('authToken');
-        if (token) {
-            verifySession(token);
-        }
+        if (token) verifySession(token);
 
         async function verifySession(token) {
             try {
-                const response = await fetch('/api/verify', {
+                const res = await fetch('/api/verify', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token })
                 });
-                const result = await response.json();
+                const result = await res.json();
                 if (result.success) {
                     redirectToDashboard(result.user.role);
                 } else {
                     localStorage.removeItem('authToken');
                 }
-            } catch (error) {
+            } catch (e) {
                 localStorage.removeItem('authToken');
             }
         }
@@ -129,24 +182,25 @@
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value.trim();
             const errorDiv = document.getElementById('error-message');
-            
+            const loginBtn = document.getElementById('loginBtn');
+
             errorDiv.style.display = 'none';
-            
             if (!username || !password) {
                 errorDiv.textContent = '⚠️ Please enter username and password';
                 errorDiv.style.display = 'block';
                 return;
             }
-            
+
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<span class="spinner"></span> Logging in...';
+
             try {
-                const response = await fetch('/api/login', {
+                const res = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password })
                 });
-                
-                const result = await response.json();
-                
+                const result = await res.json();
                 if (result.success) {
                     localStorage.setItem('authToken', result.token);
                     localStorage.setItem('user', JSON.stringify(result.user));
@@ -154,10 +208,14 @@
                 } else {
                     errorDiv.textContent = '❌ ' + (result.error || 'Invalid credentials');
                     errorDiv.style.display = 'block';
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = '🔐 Login';
                 }
             } catch (error) {
                 errorDiv.textContent = '❌ Error connecting to server';
                 errorDiv.style.display = 'block';
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '🔐 Login';
             }
         }
 
@@ -171,9 +229,7 @@
         }
 
         document.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                login();
-            }
+            if (e.key === 'Enter') login();
         });
     </script>
 </body>
